@@ -135,6 +135,30 @@ function applyLPChange(tier, rank, lp, delta) {
   return { tier: TIER_ORDER[tierIdx], rank: RANK_ORDER[rankIdx], lp: newLp };
 }
 
+// Progress toward the next TIER, for the overlay's goal bar. Deliberately
+// per-tier and not per-division: "153 LP to PLATINUM" is a milestone a viewer
+// can follow across a whole stream, where "53 to Gold I" resets every other
+// game and reads as noise.
+//
+// Null at Master and above. GM and Challenger are population-gated, not LP
+// thresholds, so there is no fixed number to count down to -- see TIER_BASE.
+function getTierProgress(tier, rank, lp) {
+  const idx = TIER_ORDER.indexOf(tier);
+  if (idx === -1) return { lpToNextTier: null, nextTierName: null, tierProgressPct: null };
+
+  const abs = getAbsoluteLP(tier, rank, lp);
+  const currentBase = TIER_BASE[tier];
+  // TIER_ORDER stops at Diamond, so the tier above the last entry is Master.
+  const nextTierName = idx < TIER_ORDER.length - 1 ? TIER_ORDER[idx + 1] : 'MASTER';
+  const span = TIER_BASE[nextTierName] - currentBase;
+
+  return {
+    lpToNextTier: Math.max(0, TIER_BASE[nextTierName] - abs),
+    nextTierName,
+    tierProgressPct: Math.max(0, Math.min(100, ((abs - currentBase) / span) * 100)),
+  };
+}
+
 function defaultLog(level, message) {
   const time = new Date().toLocaleTimeString();
   console.log(`[${time}] [${level.padEnd(8, ' ')}] ${message}`);
@@ -193,6 +217,7 @@ function createOverlayServer({ onStatusChange, log = defaultLog } = {}) {
     leaguePoints: 0, wins: 0, losses: 0,
     sessionLP: 0, sessionWins: 0, sessionLosses: 0,
     lastDelta: 0, deltaSeq: 0,
+    lpToNextTier: null, nextTierName: null, tierProgressPct: null,
     recentPlacements: [], sessionAvgPlacement: null,
     updatedAt: null, error: null,
   };
@@ -383,6 +408,7 @@ function createOverlayServer({ onStatusChange, log = defaultLog } = {}) {
         latestData = {
           ...latestData, tier: 'UNRANKED', rank: '', leaguePoints: 0, wins: 0, losses: 0,
           sessionLP: 0, sessionWins: 0, sessionLosses: 0, lastDelta: 0,
+          lpToNextTier: null, nextTierName: null, tierProgressPct: null,
           recentPlacements: [...recentPlacements], sessionAvgPlacement: sessionAveragePlacement(),
           updatedAt: new Date().toISOString(), error: null,
         };
@@ -441,6 +467,7 @@ function createOverlayServer({ onStatusChange, log = defaultLog } = {}) {
           sessionWins: entry.wins - initialSessionStats.wins,
           sessionLosses: entry.losses - initialSessionStats.losses,
           lastDelta, deltaSeq,
+          ...getTierProgress(entry.tier, entry.rank, entry.leaguePoints),
           recentPlacements: [...recentPlacements],
           sessionAvgPlacement: sessionAveragePlacement(),
           updatedAt: new Date().toISOString(), error: null,
@@ -457,7 +484,54 @@ function createOverlayServer({ onStatusChange, log = defaultLog } = {}) {
     emitStatus();
   }
 
-  // ---- Crest trim endpoint (unchanged behavior from the standalone version) ----
+  // ---- Crest normalisation endpoint ----
+  // Trimming alone isn't enough. Riot's emblem artwork has very different
+  // proportions per tier once the transparent margin is gone -- roughly 1.16:1
+  // for Gold and Platinum up to 1.66:1 for Iron and Diamond. Dropped into a
+  // fixed box with object-fit:contain, the wide ones scale down to fit the
+  // width and end up visibly smaller: Diamond and Iron rendered about 74% of
+  // Gold's visual weight, which read as the overlay being inconsistent between
+  // ranks rather than as a property of the source images.
+  //
+  // So every crest is scaled to the same rendered AREA (not the same height --
+  // equal height would make the wide ones overflow) and padded onto one shared
+  // canvas. The overlay then draws every tier at identical visual weight, and
+  // Diamond looks like Gold. Done once per tier, then cached.
+  const CREST_CANVAS_W = 224;   // 2x the on-card box, for crisp downscaling
+  const CREST_CANVAS_H = 160;
+  // Gold's area when contained in the box, which is the look we're matching.
+  const CREST_TARGET_AREA = 7520 * 4;
+
+  async function normaliseCrest(sourceBuffer) {
+    const trimmed = await sharp(sourceBuffer).trim({ threshold: 10 })
+      .toBuffer({ resolveWithObject: true });
+    const { width, height } = trimmed.info;
+
+    // Equal-area scale, then clamped so an unusually wide or tall crest still
+    // fits the canvas rather than being cropped by it.
+    let scale = Math.sqrt(CREST_TARGET_AREA / (width * height));
+    scale = Math.min(scale, CREST_CANVAS_W / width, CREST_CANVAS_H / height);
+
+    const w = Math.max(1, Math.round(width * scale));
+    const h = Math.max(1, Math.round(height * scale));
+    // Centre by padding, NOT by a second `fit: contain` resize -- contain scales
+    // up anything smaller than the box, which would push every crest back out
+    // to a canvas edge and undo the equal-area sizing above.
+    const left = Math.floor((CREST_CANVAS_W - w) / 2);
+    const top = Math.floor((CREST_CANVAS_H - h) / 2);
+
+    return sharp(trimmed.data)
+      .resize(w, h, { fit: 'fill', kernel: 'lanczos3' })
+      .extend({
+        left, top,
+        right: CREST_CANVAS_W - w - left,
+        bottom: CREST_CANVAS_H - h - top,
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
+      .png()
+      .toBuffer();
+  }
+
   const crestCache = new Map();
   // Negative cache: a failed source fetch used to be retried on every single
   // request, so an unreachable CDN (or an offline user) meant one outbound
@@ -490,16 +564,16 @@ function createOverlayServer({ onStatusChange, log = defaultLog } = {}) {
       }
       if (!response.ok) throw new Error(`Source fetch ${response.status}`);
       const sourceBuffer = Buffer.from(await response.arrayBuffer());
-      const trimmed = await sharp(sourceBuffer).trim({ threshold: 10 }).png().toBuffer();
-      crestCache.set(tier, trimmed);
+      const normalised = await normaliseCrest(sourceBuffer);
+      crestCache.set(tier, normalised);
       crestFailures.delete(tier);
-      log('CREST', `Trimmed and cached emblem-${tier}.png`);
+      log('CREST', `Normalised and cached emblem-${tier}.png`);
       res.set('Content-Type', 'image/png');
       res.set('Cache-Control', 'public, max-age=86400');
-      res.send(trimmed);
+      res.send(normalised);
     } catch (err) {
       crestFailures.set(tier, Date.now() + CREST_RETRY_COOLDOWN_MS);
-      log('ERROR', `Crest fetch/trim failed for ${tier}: ${err.message} — not retrying for ${CREST_RETRY_COOLDOWN_MS / 1000}s`);
+      log('ERROR', `Crest fetch/normalise failed for ${tier}: ${err.message} — not retrying for ${CREST_RETRY_COOLDOWN_MS / 1000}s`);
       res.status(502).send('Crest unavailable');
     }
   });
@@ -560,6 +634,12 @@ function createOverlayServer({ onStatusChange, log = defaultLog } = {}) {
       latestData.rank = newRank;
       latestData.lastDelta = 0; // a manual rank pick isn't a "match result"
       latestData.leaguePoints = 0;
+      // ...and for the same reason it must not land in the session total. Move
+      // the baseline with it, otherwise jumping Unranked -> Gold IV reads as a
+      // +1247 LP session before a single simulated game has been played.
+      if (initialSessionStats) {
+        initialSessionStats.absLP = getAbsoluteLP(newTier, newRank, 0);
+      }
     } else if (action === 'error') {
       latestData.error = errorMsg || 'Simulated Test Error!';
     } else if (action === 'reset_error') {
@@ -580,6 +660,7 @@ function createOverlayServer({ onStatusChange, log = defaultLog } = {}) {
     }
     latestData.recentPlacements = [...recentPlacements];
     latestData.sessionAvgPlacement = sessionAveragePlacement();
+    Object.assign(latestData, getTierProgress(latestData.tier, latestData.rank, latestData.leaguePoints));
     latestData.updatedAt = new Date().toISOString();
 
     emitStatus();
@@ -691,4 +772,4 @@ function createOverlayServer({ onStatusChange, log = defaultLog } = {}) {
   };
 }
 
-module.exports = { createOverlayServer, getAbsoluteLP, applyLPChange, TIER_BASE, RANK_BASE };
+module.exports = { createOverlayServer, getAbsoluteLP, applyLPChange, getTierProgress, TIER_BASE, RANK_BASE };

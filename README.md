@@ -45,6 +45,10 @@ Go to **Dashboard** → click **Copy URL** → add a **Browser Source** in
 Streamlabs pointing to that URL (`http://localhost:3000/overlay.html`
 by default).
 
+The card itself is 370×108. Set the Browser Source slightly larger than
+that (say 400×130) — the page background is transparent, so surplus
+source area is invisible, while a source *smaller* than the card clips it.
+
 ### Why Browser Source and not a captured window
 
 I looked at wrapping the overlay itself in the Electron window and having
@@ -87,26 +91,47 @@ all come from inside `electron-builder`'s own dependency tree — not
 anything this project imports directly. They only matter for `npm run
 build` (packaging an installer), never for `npm start`.
 
-**Vulnerabilities**: `npm audit` originally flagged 9 (8 high, 1 critical).
-I traced every one of them:
+**Vulnerabilities**: `npm audit` reports **16 high severity** on a fresh
+install. That number is misleading — it's one advisory counted once per
+dependency path.
 
-- 8 of the 9 (including the critical `tar` one) came from `electron-builder`
-  being two years stale. Bumped it `24.13.3 → ^26.0.0` — verified our
-  existing `build` config still loads correctly under the new version.
-- The 9th was a real CVE in `electron` itself (ASAR integrity bypass +
-  an AppleScript injection issue on macOS). Reading the actual advisory,
-  it's scoped to apps that enable specific opt-in hardening flags or call
-  `app.moveToApplicationsFolder()` — this app does neither. Even so,
-  bumped `electron` `30.0.0 → ^43.0.0` (the version `npm audit` itself
-  recommends) to close it outright rather than argue the theoretical
-  case. That's a 13-major-version jump, so before shipping it I re-ran
-  the full test suite against it: window load, settings save + persist
-  across a reload, mock rank/LP changes reflecting on the dashboard,
-  the crest image endpoint, tray-close-keeps-server-alive behavior, and
-  clean shutdown on quit — all identical to the pre-upgrade results, and
-  `sharp` (crest trimming) confirmed still producing byte-identical output
-  under Electron 43's newer bundled Node/V8. `npm audit` now reports
-  0 vulnerabilities.
+All 16 resolve to a single DoS in `brace-expansion`
+([GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg),
+CVSS 7.5), where a crafted glob pattern can force unbounded expansion and
+exhaust memory. Every path reaches it through `electron-builder`
+(`@electron/asar` → `glob` → `minimatch` → `brace-expansion`, and
+variations on that chain).
+
+It doesn't affect the app or anyone running it:
+
+- `electron-builder` is a **devDependency**. It runs only for
+  `npm run build` when packaging an installer — `npm start` never loads it.
+- The `build.files` list is explicit, so only this project's own source is
+  packaged. Nothing from the vulnerable chain ships to an installed app.
+- The glob patterns it expands come from this repo's own `package.json`,
+  not from user input or any network source. Triggering the DoS would mean
+  feeding your own build tool a hostile pattern by hand.
+
+**It's deliberately not patched**, because it currently can't be without
+breaking the build. The fix only exists in `brace-expansion` 5.0.8+, and v5
+changed its export from a callable function to an object (`{ expand }`).
+Every consumer in the chain still calls it as a function — see
+`minimatch.js`, `var expand = require('brace-expansion')` then
+`expand(pattern)` — so an `overrides` entry forcing v5 breaks packaging
+outright. `npm audit fix --force` is no better: its suggestion is to
+*downgrade* `electron-builder` 26.15.3 → 25.1.8, which is a major version
+backwards and doesn't clear the advisory either.
+
+This clears itself when `electron-builder` updates its own dependency
+chain. Worth re-checking with `npm audit` now and then; there's nothing to
+act on in the meantime.
+
+**Earlier audit history**: an initial pass cleared 9 findings (8 high, 1
+critical) by bumping `electron-builder` `24.13.3 → ^26.0.0` and `electron`
+`30.0.0 → ^43.0.0`. The Electron CVE (ASAR integrity bypass, plus an
+AppleScript injection issue on macOS) only applied to apps using specific
+opt-in hardening flags or `app.moveToApplicationsFolder()` — neither of
+which this app does — but it was closed outright rather than argued.
 
 
 ## Notes

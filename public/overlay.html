@@ -7,11 +7,40 @@
   /* If digits look a hair high or low on your system font, this is the one
      value to touch -- e.g. 0.5px nudges them down. The residual is caused by
      glyph hinting and differs per font, so it can't be fixed once for everyone. */
-  :root { --pl-nudge: 0px; }
+  :root {
+    --pl-nudge: 0px;
 
-  * {
-    box-sizing: border-box;
+    /* Card footprint is deliberately unchanged from the previous version so an
+       existing OBS/Streamlabs Browser Source keeps working without being
+       resized. If you ever do change these, set the source a little LARGER
+       than the card -- the page background is transparent, so surplus source
+       area is invisible, while a source smaller than the card clips it. */
+    --card-w: 370px;
+    --card-h: 108px;
+
+    --text:  #e8edf5;
+    --dim:   #cfd6e4;
+    --muted: #8a96a8;
+    --cyan:  #7ee0ff;
+    --gain:  #00ff88;
+    --loss:  #ff4d4d;
+
+    /* Tier palette, re-set from JS on every rank change (see applyTierPalette).
+       These defaults only matter for the frames before the first poll lands.
+       Everything that reacts to a rank change -- the goal bar, the crest glow,
+       the promotion/demotion takeover -- draws from these, so the card takes on
+       the colour of the tier you're actually in. The steady-state readout does
+       NOT: cyan stays exclusive to the LP number and the placement strip stays
+       tonal, so the hierarchy survives. */
+    --tier-bright: #7ee0ff;
+    --tier-dim:    #4a8296;
+    --tier-mid:    #28464f;
+    --tier-deep:   #16272c;
+    --tier-ring:   rgba(126,224,255,0.55);
+    --tier-glow:   rgba(126,224,255,0.28);
   }
+
+  * { box-sizing: border-box; }
 
   html, body {
     margin: 0;
@@ -25,19 +54,288 @@
     position: relative;
     display: flex;
     align-items: center;
-    justify-content: center; /* centers the emblem+info group as a unit */
-    gap: 12px;
-    width: 370px;
-    height: 108px;
-    background: linear-gradient(135deg, #212c41ea 0%, #212c41ea 100%);
-    border: 1px solid rgba(255,255,255,0.08);
+    width: var(--card-w);
+    height: var(--card-h);
+    /* Left-to-right lift: the emblem end carries slightly more weight, which
+       stops the crest from looking like it's floating on a flat slab. */
+    background: linear-gradient(115deg, #253150ee 0%, #1e2839ee 62%, #1b2433ee 100%);
+    border: 1px solid rgba(255,255,255,0.09);
     border-radius: 10px;
-    padding: 10px 14px 18px 45px;
-    color: #fff;
+    /* Bottom padding reserves the footer band (Riot ID / error line) so it can
+       never collide with the info rows above it. Kept tight because every pixel
+       here is one the type can't have -- the card has to stay readable after a
+       1080p canvas is downscaled to a 720p output. */
+    padding: 6px 12px 13px 12px;
+    color: var(--text);
     box-shadow: 0 4px 14px rgba(0,0,0,0.4);
     overflow: hidden;
     isolation: isolate; /* lets the LP glow sit behind text but above the panel */
+    transition: box-shadow 0.4s ease, border-color 0.4s ease;
   }
+
+  /* 12 + 112 + 12 + 222 + 12 = 370. The previous layout totalled 386 against a
+     370px card, so the info column was being clipped by ~16px -- which is what
+     forced the LP badge down to an unreadable size to fit beside it. */
+  .content-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Landscape, not square -- the crests are wider than they are tall, so a
+     square box is mostly dead space. 112 wide because the server now pads every
+     crest onto one canvas at equal visual weight (see normaliseCrest), and the
+     widest tiers need the room to reach that weight without being scaled down. */
+  .emblem {
+    width: 112px;
+    height: 80px;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .emblem img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* images are pre-trimmed server-side to their
+                            actual artwork bbox, so plain contain is
+                            enough — no per-tier zoom hack needed */
+    /* Second shadow is a tier-tinted bloom -- it makes a Gold crest sit in warm
+       light and a Diamond one in cold, which sells the rank change far more
+       cheaply than animating the artwork itself. */
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)) drop-shadow(0 0 7px var(--tier-glow));
+    transition: opacity 0.45s ease, filter 0.6s ease;
+  }
+  .emblem img.swapping { opacity: 0; }
+
+  /* Fixed width so switching tiers (IRON vs GRANDMASTER, very different text
+     lengths) never changes the group's total width or shifts the crest. */
+  .info {
+    flex: 0 0 auto;
+    width: 222px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  /* ---- Row 1: rank + LP (the primary read) ---- */
+  .rank-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  .tier {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Fit-to-box for the long labels. "GRANDMASTER" and "PLATINUM III" don't fit
+     at 17px next to a 4-digit LP value, and ellipsising the rank is worse than
+     setting it a few points smaller. */
+  .tier.long { font-size: 14px; letter-spacing: 0; }
+
+  /* The LP figure is the headline. It carries the most weight on the card by a
+     wide margin -- it's the number viewers actually track, and it's the one
+     that has to survive a 720p downscale. */
+  .lp {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--cyan);
+    position: relative;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    flex: 0 0 auto;
+  }
+  .lp .unit { font-size: 11px; font-weight: 700; opacity: 0.72; margin-left: 2px; }
+
+  /* Direction marker, in place of the old corner badge. The rolling number
+     already shows the magnitude, so this only has to answer "which way" -- and
+     because it sits against the LP figure it reads as part of the same object.
+     Width is reserved permanently so the row never shifts when it appears. */
+  .lp-trend {
+    flex: 0 0 auto;
+    width: 11px;
+    margin-left: 3px;
+    font-size: 11px;
+    line-height: 1;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .lp-trend.show { opacity: 1; transform: translateY(0); }
+  .lp-trend.up   { color: var(--gain); }
+  .lp-trend.down { color: var(--loss); }
+  .lp::after {
+    content: '';
+    position: absolute;
+    inset: -40% -18%;
+    z-index: -1;
+    background: radial-gradient(ellipse, rgba(126,224,255,0.40), transparent 70%);
+    opacity: 0.15;
+    will-change: opacity;
+    animation: lpBreathe 5s ease-in-out infinite;
+  }
+  @keyframes lpBreathe { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.55; } }
+
+  /* ---- Row 2: progress to the next tier ---- */
+  /* Kept on `visibility` rather than `display` so hiding it at Master+ (where
+     there is no LP target) leaves the row's height in place and the other rows
+     don't jump. */
+  .goal-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 11px;
+  }
+  .goal-row.hidden { visibility: hidden; }
+  .goal-bar {
+    flex: 1 1 auto;
+    height: 4px;
+    min-width: 0;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.10);
+    overflow: hidden;
+  }
+  .goal-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--tier-dim), var(--tier-bright));
+    transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1),
+                background 0.6s ease;
+  }
+  .goal-label {
+    flex: 0 0 auto;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Row 3: last 5 placements, newest on the left ---- */
+  .placements-row {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    height: 20px;
+  }
+  /* Square and even-sized on purpose. Flex centring is sub-pixel accurate,
+     but with an odd-width / non-square box the rasteriser rounds the glyph
+     the same direction every time -- measured as a consistent 0.5px upward
+     lean at 17x16. 18x18 puts the centre on a whole pixel and that goes to
+     zero, without a font-specific nudge (the required nudge flips sign
+     between fonts, so hard-coding one would break on someone else's box). */
+  .pl {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+    transform: translateY(var(--pl-nudge));
+    flex: 0 0 auto;
+  }
+  /* Tonal: hierarchy by brightness only, so cyan stays exclusive to the LP
+     number and the strip never competes with it. Also survives colourblind
+     viewers and OBS colour shifts, since the signal is luminance not hue. */
+  .pl.first { color: #0a1520; background: var(--dim); border: 1px solid var(--dim); }
+  .pl.top4  { color: var(--dim); background: rgba(207,214,228,0.07); border: 1px solid rgba(255,255,255,0.18); }
+  .pl.bot4  { color: #6b7488; background: transparent; border: 1px solid rgba(255,255,255,0.08); }
+  .pl.empty { color: #414959; background: transparent; border: 1px solid rgba(255,255,255,0.05); }
+
+  /* ---- Row 4: session summary ---- */
+  /* line-height and the overflow rule are load-bearing here: at 1.1 the line box
+     is shorter than the font's descender, so `overflow: hidden` was slicing the
+     bottom off the "g" in "avg". Give the row its natural descender room and
+     clip only horizontally. */
+  .session-row {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow-x: hidden;
+    overflow-y: visible;
+    color: var(--muted);
+  }
+  .session-row .tag {
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #6b7488;
+  }
+  .session-row .amount { font-weight: 800; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .session-row.positive .amount { color: var(--gain); }
+  .session-row.negative .amount { color: var(--loss); }
+  .session-row .sep { color: #4a5266; }
+  .session-row .stat { font-variant-numeric: tabular-nums; }
+
+  /* ---- Promotion / demotion takeover ---- */
+  /* Previously a tier change was rendered by the <img> src silently swapping.
+     The single most clippable moment on a ranked stream had no treatment at
+     all. This holds the card for ~2.6s and then settles back to the readout. */
+  .moment {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .moment.show { opacity: 1; }
+  .moment .verb {
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+  .moment .dest {
+    font-size: 21px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+  }
+  /* The banner takes the colour of the tier you landed in, not a generic
+     green/red -- promoting into Gold should look like Gold. Direction is
+     carried by the verb instead, which is why it stays green/red. A demotion
+     is additionally knocked back a little, so dropping into a tier never looks
+     as bright as climbing into it. */
+  .moment {
+    background: linear-gradient(135deg, var(--tier-deep), var(--tier-mid) 55%, var(--tier-deep));
+  }
+  .moment.up .verb   { color: var(--gain); }
+  .moment.down .verb { color: var(--loss); }
+  .moment.down { filter: saturate(0.7) brightness(0.82); }
+
+  .card.promoted,
+  .card.demoted { box-shadow: 0 0 0 2px var(--tier-ring), 0 4px 22px var(--tier-glow); border-color: var(--tier-ring); }
 
   /* Continuous sheen. Measured at +0.15% CPU: the band is small and its
      keyframes hold constant for ~89% of the cycle, so the compositor has
@@ -77,210 +375,50 @@
 
   @media (prefers-reduced-motion: reduce) {
     .sheen i, .lp::after { animation: none !important; }
+    .goal-fill, .emblem img { transition: none !important; }
   }
 
-  /* Fixed Emblem Box */
-  .content-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .emblem {
-    width: 110px;
-    height: 110px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .emblem img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* images are pre-trimmed server-side to their
-                             actual artwork bbox, so plain contain is
-                             enough — no per-tier zoom hack needed */
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.45));
-  }
-
-  /* Info Column - FIXED width so switching tiers (IRON vs GRANDMASTER,
-     very different text lengths) never changes the group's total width
-     and never shifts the icon's position. */
-  .info {
-    flex: 0 0 auto;
-    width: 205px;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-  }
-
-  /* Row 1: Player Name */
-  .name-row {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    font-size: 15px;
-    font-weight: 600;
-    color: #cfd6e4;
-    line-height: 1.2;
-    margin-bottom: 1px;
+  /* ---- Footer band: Riot ID, or an error. Mutually exclusive, same slot. ---- */
+  .footer, .error {
+    position: absolute;
+    bottom: 4px;
+    right: 12px;
+    z-index: 2;
+    max-width: 250px;
+    line-height: 1;
     white-space: nowrap;
-    overflow: hidden;
-    /* no reserved padding needed — the delta badge is absolutely
-       positioned and floats independently of this element's box */
-  }
-  /* The name truncates; the region never does. */
-  .name-row .who {
-    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    pointer-events: none;
   }
-  .name-row .tag {
-    color: #7c8598;
-    font-weight: 400;
-  }
-  .name-row .region {
-    flex: 0 0 auto;
-    font-size: 8.5px;
+
+  /* The Riot ID lives down here rather than in the top row. On a personal
+     stream it's the least valuable thing on the card -- viewers already know
+     whose stream they're watching -- and in the old layout it occupied the
+     most contested space, directly under the LP badge. */
+  .footer {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 9px;
     font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.42);
+    user-select: none;
+  }
+  .footer .tagline { color: rgba(255,255,255,0.26); }
+  .footer .region {
+    font-size: 8px;
+    font-weight: 800;
     line-height: 1;
     letter-spacing: 0.5px;
-    text-transform: uppercase;
-    color: #8a96a8;
+    color: rgba(255,255,255,0.34);
     border: 1px solid rgba(255,255,255,0.13);
     border-radius: 3px;
-    padding: 2px 4px;
-    transform: translateY(-1px);
+    padding: 2px 3px;
   }
-
-  /* Row 2: Rank & LP */
-  .rank-row {
-    display: flex;
-    align-items: baseline;
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: 0.3px;
-    line-height: 1.2;
-    margin-bottom: 2px;
-    white-space: nowrap;
-  }
-
-  .lp {
-    color: #7ee0ff;
-    font-weight: 700;
-    margin-left: 6px;
-    position: relative;
-  }
-  .lp::after {
-    content: '';
-    position: absolute;
-    inset: -40% -18%;
-    z-index: -1;
-    background: radial-gradient(ellipse, rgba(126,224,255,0.40), transparent 70%);
-    opacity: 0.15;
-    will-change: opacity;
-    animation: lpBreathe 5s ease-in-out infinite;
-  }
-  @keyframes lpBreathe { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.55; } }
-
-  /* Row 3: last 5 placements, newest on the left. Fixed slot count and fixed
-     chip size so the row's footprint never changes as results come in. */
-  .placements-row {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    margin-bottom: 2px;
-    height: 18px;
-  }
-  /* Square and even-sized on purpose. Flex centring is sub-pixel accurate,
-     but with an odd-width / non-square box the rasteriser rounds the glyph
-     the same direction every time -- measured as a consistent 0.5px upward
-     lean at 17x16. 18x18 puts the centre on a whole pixel and that goes to
-     zero, without a font-specific nudge (the required nudge flips sign
-     between fonts, so hard-coding one would break on someone else's box). */
-  .pl {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 1;
-    letter-spacing: 0;
-    font-variant-numeric: tabular-nums;
-    transform: translateY(var(--pl-nudge));
-  }
-  /* Tonal: hierarchy by brightness only, so cyan stays exclusive to the LP
-     number and the strip never competes with it. Also survives colourblind
-     viewers and OBS colour shifts, since the signal is luminance not hue. */
-  .pl.first { color: #0a1520; background: #cfd6e4; border: 1px solid #cfd6e4; }
-  .pl.top4  { color: #cfd6e4; background: rgba(207,214,228,0.07); border: 1px solid rgba(255,255,255,0.18); }
-  .pl.bot4  { color: #6b7488; background: transparent; border: 1px solid rgba(255,255,255,0.08); }
-  .pl.empty { color: #414959; background: transparent; border: 1px solid rgba(255,255,255,0.05); }
-
-  /* Row 4: Session W/L */
-  .session-row {
-    font-size: 14px;
-    font-weight: 600;
-    color: #7ee0ff;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .session-row.positive { color: #00ff88; }
-  .session-row.negative { color: #ff4d4d; }
-
-  /* Broadcast HUD Top-Right Notification Pill */
-  .delta-badge {
-    position: absolute;
-    top: 6px;
-    right: 8px;
-    font-size: 5px;
-    font-weight: 800;
-    padding: 2px 7px;
-    border-radius: 12px;
-    letter-spacing: 0.3px;
-    opacity: 0;
-    transform: translateY(-4px) scale(0.9);
-    transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    pointer-events: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  }
-  .delta-badge.show {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  .delta-badge.gain {
-    background: #00ff8822;
-    color: #00ff88;
-    border: 1px solid #00ff8855;
-  }
-  .delta-badge.loss {
-    background: #ff4d4d22;
-    color: #ff4d4d;
-    border: 1px solid #ff4d4d55;
-  }
-
-  /* Bottom-right footer slot: error and credit share this exact spot
-     and are mutually exclusive, so they can never collide. */
-  .error,
-  .credit {
-    position: absolute;
-    bottom: 3px;
-    right: 12px;
-    max-width: 200px;
-    line-height: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    pointer-events: none;
-  }
+  .footer.hidden { display: none; }
 
   .error {
     color: #ff6b6b;
@@ -288,49 +426,47 @@
     font-weight: 600;
     display: none; /* shown via .visible when an error is present */
   }
-  .error.visible {
-    display: block;
-  }
+  .error.visible { display: block; }
 
-  .credit {
-    font-size: 8.5px;
-    color: rgba(255, 255, 255, 0.65);
-    letter-spacing: 0.2px;
-    text-transform: uppercase;
-    font-weight: 600;
-    user-select: none;
-  }
-  .credit.hidden {
-    display: none;
-  }
 </style>
 </head>
 <body>
 
-<div class="card">
-  <!-- Top-Right Floating Event Pill -->
-  <div id="deltaBadge" class="delta-badge">+0 LP</div>
+<div class="card" id="card">
   <div class="sheen"><i></i></div>
 
   <div class="content-group">
     <div class="emblem"><img id="emblem" src="" alt="rank crest" /></div>
     <div class="info">
-      <div class="name-row">
-        <span class="who"><span id="gameName">—</span><span class="tag" id="tagLine"></span></span>
-        <span class="region" id="region"></span>
-      </div>
       <div class="rank-row">
-        <span id="tierRank">—</span> 
-        <span class="lp"><span id="lpVal">0</span> LP</span>
+        <span class="tier" id="tierRank">—</span>
+        <span class="lp"><span id="lpVal">0</span><span class="unit">LP</span></span>
+        <span class="lp-trend" id="lpTrend"></span>
+      </div>
+      <div class="goal-row hidden" id="goalRow">
+        <div class="goal-bar"><div class="goal-fill" id="goalFill"></div></div>
+        <span class="goal-label" id="goalLabel"></span>
       </div>
       <div class="placements-row" id="placements"></div>
-      <div class="session-row" id="sessionRecord">Session: +0 LP (0W - 0L)</div>
+      <div class="session-row" id="sessionRow">
+        <span class="tag">SESSION</span>
+        <span class="amount" id="sessionLP">+0 LP</span>
+        <span class="sep">·</span>
+        <span class="stat" id="sessionRecord">0W-0L</span>
+      </div>
     </div>
   </div>
-  
-  <!-- Bottom Footer Elements -->
+
+  <div class="footer" id="footer">
+    <span id="gameName">—</span><span class="tagline" id="tagLine"></span>
+    <span class="region" id="region"></span>
+  </div>
   <div class="error" id="errorMsg"></div>
-  <div class="credit" id="creditLabel">Made by @Splenk</div>
+
+  <div class="moment" id="moment">
+    <span class="verb">Promoted</span>
+    <span class="dest">—</span>
+  </div>
 </div>
 
 <script>
@@ -346,12 +482,71 @@
     MASTER: 'master', GRANDMASTER: 'grandmaster', CHALLENGER: 'challenger'
   };
 
+  // Tier identity colours, roughly matched to Riot's own emblem artwork so the
+  // card's accent reads as the same metal as the crest sitting next to it.
+  const TIER_COLORS = {
+    IRON:        [107, 107, 111],
+    BRONZE:      [164, 107,  60],
+    SILVER:      [159, 174, 184],
+    GOLD:        [224, 176,  74],
+    PLATINUM:    [ 76, 169, 165],
+    EMERALD:     [ 47, 176, 102],
+    DIAMOND:     [110, 138, 224],
+    MASTER:      [169,  80, 214],
+    GRANDMASTER: [214,  69,  69],
+    CHALLENGER:  [240, 201, 107],
+  };
+
+  // Derives the whole accent ramp from one base colour and writes it onto the
+  // card as custom properties. Everything tier-reactive in the CSS reads these,
+  // so a rank change repaints the goal bar, the crest bloom and the takeover
+  // banner together without any of them needing to know about tiers.
+  let lastPaletteTier = null;
+  function applyTierPalette(tier) {
+    const c = TIER_COLORS[tier];
+    if (!c || tier === lastPaletteTier) return;
+    lastPaletteTier = tier;
+
+    const [r, g, b] = c;
+    const scale = (f) => `rgb(${Math.round(r * f)}, ${Math.round(g * f)}, ${Math.round(b * f)})`;
+    const card = document.getElementById('card');
+    card.style.setProperty('--tier-bright', `rgb(${r}, ${g}, ${b})`);
+    card.style.setProperty('--tier-dim',    scale(0.55));
+    card.style.setProperty('--tier-mid',    scale(0.30));
+    card.style.setProperty('--tier-deep',   scale(0.17));
+    card.style.setProperty('--tier-ring',   `rgba(${r}, ${g}, ${b}, 0.55)`);
+    card.style.setProperty('--tier-glow',   `rgba(${r}, ${g}, ${b}, 0.30)`);
+  }
+
+  // Ladder order, used only to decide whether a rank change was up or down.
+  // Master+ have no division, so they score at their tier floor -- fine here,
+  // since all we need from this is a comparison.
+  const TIER_SEQ = ['IRON', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'EMERALD',
+                    'DIAMOND', 'MASTER', 'GRANDMASTER', 'CHALLENGER'];
+  const DIV_SEQ = ['IV', 'III', 'II', 'I'];
+  function rankScore(tier, rank) {
+    const t = TIER_SEQ.indexOf(tier);
+    if (t === -1) return null;
+    const d = DIV_SEQ.indexOf(rank);
+    return t * 4 + (d === -1 ? 0 : d);
+  }
+
+  // ?scale=1.5 renders the whole card larger. This is not the same as resizing
+  // the Browser Source in OBS: that stretches an already-rendered 370x108
+  // texture and goes soft, where this re-renders the page at the larger size.
+  // Set the source to the scaled dimensions to match.
+  const scale = parseFloat(new URLSearchParams(location.search).get('scale'));
+  if (scale > 0 && scale <= 4) document.getElementById('card').style.zoom = scale;
+
   let currentDisplayedLP = 0;
   let isFirstLoad = true;
   let badgeTimeout = null;
   let lpAnimationFrameId = null;
   let lastSeenDeltaSeq = null;
   let lastCrestFile = null;
+  let lastRankScore = null;
+  let lastMockMode = null;
+  let momentTimeout = null;
 
   // Always renders PLACEMENT_SLOTS chips so the row can't change size as
   // history fills in. Diffs the markup before writing, same idea as
@@ -404,7 +599,7 @@
     // actual match, so without this the badge would re-trigger (and its
     // fade-out timer would keep resetting) on every single poll cycle
     // forever, making it look permanently stuck instead of fading out.
-    if (delta && isNewDelta) showDeltaBadge(delta);
+    if (delta && isNewDelta) showTrend(delta);
 
     if (currentDisplayedLP === targetLP) return;
 
@@ -417,7 +612,7 @@
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const easeProgress = 1 - Math.pow(1 - progress, 3);
-      
+
       currentDisplayedLP = Math.round(startLP + (diff * easeProgress));
       document.getElementById('lpVal').textContent = currentDisplayedLP;
 
@@ -433,19 +628,83 @@
     lpAnimationFrameId = requestAnimationFrame(updateNumber);
   }
 
-  // Show floating top-right notification pill on LP gain/loss
-  function showDeltaBadge(delta) {
-    const badge = document.getElementById('deltaBadge');
-    if (!badge || delta === 0) return;
+  // The rolling LP figure already shows how much changed, so this only has to
+  // answer which way. Replaces the old corner badge, which cost the rank row
+  // 55px of permanent reserved space to display something visible for 3.5s.
+  function showTrend(delta) {
+    const el = document.getElementById('lpTrend');
+    if (!el || delta === 0) return;
 
     clearTimeout(badgeTimeout);
-
-    badge.textContent = (delta > 0 ? '▲ +' : '▼ ') + delta + ' LP';
-    badge.className = 'delta-badge show ' + (delta > 0 ? 'gain' : 'loss');
+    el.textContent = delta > 0 ? '▲' : '▼';
+    el.className = 'lp-trend show ' + (delta > 0 ? 'up' : 'down');
 
     badgeTimeout = setTimeout(() => {
-      badge.className = 'delta-badge';
-    }, 3500);
+      el.className = 'lp-trend ' + (delta > 0 ? 'up' : 'down');
+    }, 4000);
+  }
+
+  function showRankMoment(isUp, tier, rank) {
+    const card = document.getElementById('card');
+    const moment = document.getElementById('moment');
+    if (!card || !moment) return;
+
+    moment.querySelector('.verb').textContent = isUp ? 'Promoted' : 'Demoted';
+    moment.querySelector('.dest').textContent = rank ? `${tier} ${rank}` : tier;
+    moment.className = 'moment show ' + (isUp ? 'up' : 'down');
+    card.classList.add(isUp ? 'promoted' : 'demoted');
+
+    clearTimeout(momentTimeout);
+    momentTimeout = setTimeout(() => {
+      moment.className = 'moment ' + (isUp ? 'up' : 'down');
+      card.classList.remove('promoted', 'demoted');
+    }, 2600);
+  }
+
+  // Fires only on a genuine ladder move. Deliberately skipped on the first
+  // sighting of any rank (otherwise launching the app would announce a
+  // promotion to wherever you already are) and on the poll where mock mode
+  // flips, since that snaps the rank between simulated and real values.
+  function checkRankChange(tier, rank, isMock) {
+    const score = rankScore(tier, rank);
+    const mockFlipped = lastMockMode !== null && lastMockMode !== isMock;
+    lastMockMode = isMock;
+
+    if (score === null) { lastRankScore = null; return; }
+    if (lastRankScore === null || mockFlipped) { lastRankScore = score; return; }
+    if (score === lastRankScore) return;
+
+    const isUp = score > lastRankScore;
+    lastRankScore = score;
+    showRankMoment(isUp, tier, rank);
+  }
+
+  function renderGoal(data) {
+    const row = document.getElementById('goalRow');
+    // Null above Diamond -- GM/Challenger are population-gated, so there's no
+    // LP target to count toward. Hidden via a class that uses `visibility`,
+    // so the rows below don't shift.
+    if (typeof data.lpToNextTier !== 'number' || !data.nextTierName) {
+      row.classList.add('hidden');
+      return;
+    }
+    row.classList.remove('hidden');
+    document.getElementById('goalFill').style.width = (data.tierProgressPct || 0) + '%';
+    setSafeText('goalLabel', `${data.lpToNextTier} to ${data.nextTierName}`);
+  }
+
+  function renderSession(data) {
+    const row = document.getElementById('sessionRow');
+    const lp = data.sessionLP || 0;
+    setSafeText('sessionLP', (lp >= 0 ? '+' : '') + lp + ' LP');
+
+    // Average placement only appears once there's a session game to average --
+    // "avg 0.0" on a fresh session reads as a real (terrible) statistic.
+    const avg = data.sessionAvgPlacement;
+    const record = `${data.sessionWins || 0}W-${data.sessionLosses || 0}L`;
+    setSafeText('sessionRecord', avg !== null && avg !== undefined ? `${record} · avg ${avg}` : record);
+
+    row.className = 'session-row' + (lp > 0 ? ' positive' : lp < 0 ? ' negative' : '');
   }
 
   async function refresh() {
@@ -454,53 +713,50 @@
       const data = await res.json();
 
       setSafeText('gameName', data.gameName || '—');
-      setSafeText('tagLine', data.tagLine ? ' #' + data.tagLine : '');
+      setSafeText('tagLine', data.tagLine ? '#' + data.tagLine : '');
+      // Most players' tagline IS their region ("Splenk#EUW"), in which case the
+      // separate region chip is the same fact twice. Only show it when it adds
+      // something.
       const regionEl = document.getElementById('region');
+      const dupRegion = data.region && data.tagLine &&
+        data.region.toUpperCase() === data.tagLine.toUpperCase();
       setSafeText('region', data.region || '');
-      regionEl.style.display = data.region ? '' : 'none';
-      setSafeText('tierRank', data.tier === 'UNRANKED' ? 'Unranked' : `${data.tier} ${data.rank}`);
-      renderPlacements(data.recentPlacements || []);
+      regionEl.style.display = (data.region && !dupRegion) ? '' : 'none';
 
-      // Error and credit share one footer slot — only one shows at a time.
+      // Before checkRankChange, so a promotion banner is already wearing the
+      // colour of the tier it's announcing.
+      applyTierPalette(data.tier);
+
+      const rankText = data.tier === 'UNRANKED' ? 'UNRANKED' : `${data.tier} ${data.rank}`.trim();
+      setSafeText('tierRank', rankText);
+      document.getElementById('tierRank').classList.toggle('long', rankText.length > 10);
+      renderPlacements(data.recentPlacements || []);
+      renderGoal(data);
+      renderSession(data);
+
+      // Footer and error share one slot — only one shows at a time.
       const errorEl = document.getElementById('errorMsg');
-      const creditEl = document.getElementById('creditLabel');
+      const footerEl = document.getElementById('footer');
       if (data.error) {
         setSafeText('errorMsg', 'Overlay: ' + data.error);
         errorEl.classList.add('visible');
-        creditEl.classList.add('hidden');
+        footerEl.classList.add('hidden');
       } else {
         errorEl.classList.remove('visible');
-        creditEl.classList.remove('hidden');
+        footerEl.classList.remove('hidden');
       }
 
       // Smooth LP animation -- the number always rolls the same way
       // whether it's a normal gain/loss or a promotion; only the badge
       // (which uses the server's absolute-LP-based delta) needs the
       // promotion-aware math, since it has to stay correctly signed.
-      // isNewDelta prevents the badge from re-firing on every poll for
-      // the same stale event.
       if (data.tier !== 'UNRANKED') {
         const isNewDelta = data.deltaSeq !== undefined && data.deltaSeq !== lastSeenDeltaSeq;
         animateLP(data.leaguePoints || 0, data.lastDelta || 0, isNewDelta);
         lastSeenDeltaSeq = data.deltaSeq;
       }
 
-      // Update Session Row
-      const sessionEl = document.getElementById('sessionRecord');
-      const sessLP = data.sessionLP || 0;
-      const sessSign = sessLP >= 0 ? '+' : '';
-      const avg = data.sessionAvgPlacement;
-      const sessionText = `Session: ${sessSign}${sessLP} LP`;
-      
-      setSafeText('sessionRecord', sessionText);
-      
-      if (sessLP > 0) {
-        sessionEl.className = 'session-row positive';
-      } else if (sessLP < 0) {
-        sessionEl.className = 'session-row negative';
-      } else {
-        sessionEl.className = 'session-row';
-      }
+      checkRankChange(data.tier, data.rank, !!data.isMockMode);
 
       // Update emblem image safely — never assign an empty string to
       // img.src: browsers treat that as "reload the current page as an
@@ -517,7 +773,18 @@
         // (and, whenever the source CDN was unreachable, turned into an
         // unbounded retry storm since failures aren't cached).
         if (crestFile !== lastCrestFile) {
-          imgEl.src = CREST_BASE + crestFile;
+          // Cross-fade rather than a hard cut, so a tier change reads as a
+          // transition instead of the image popping.
+          const swap = () => {
+            imgEl.src = CREST_BASE + crestFile;
+            imgEl.classList.remove('swapping');
+          };
+          if (lastCrestFile === null) {
+            swap();
+          } else {
+            imgEl.classList.add('swapping');
+            setTimeout(swap, 450);
+          }
           lastCrestFile = crestFile;
         }
         imgEl.style.visibility = 'visible';
@@ -526,6 +793,8 @@
       }
     } catch (e) {
       setSafeText('errorMsg', 'Overlay: cannot reach local server');
+      document.getElementById('errorMsg').classList.add('visible');
+      document.getElementById('footer').classList.add('hidden');
     }
   }
 
