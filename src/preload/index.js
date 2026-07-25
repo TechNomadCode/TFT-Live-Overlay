@@ -1,3 +1,8 @@
+// The entire IPC surface available to the renderer, exposed as `window.tftApp`.
+// contextIsolation is on and nodeIntegration is off, so this is the only bridge
+// between the settings window and the main process -- every entry here mirrors
+// an ipcMain.handle in src/main/ipc.js one-for-one.
+
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('tftApp', {

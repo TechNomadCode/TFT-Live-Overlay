@@ -1,9 +1,55 @@
+<div align="center">
+
 # TFT Live Overlay
+
+**Your Teamfight Tactics rank, LP swings and session record — live on stream,
+straight from the Riot API.**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Electron](https://img.shields.io/badge/Electron-43-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
+[![Platform](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-lightgrey)](#building-a-distributable-installer)
+[![OBS / Streamlabs](https://img.shields.io/badge/OBS%20%C2%B7%20Streamlabs-Browser%20Source-302E31)](#adding-it-to-streamlabs--obs)
+
+<img src="docs/overlay-sheen.gif" alt="The TFT Live Overlay card, with the sheen band sweeping across it" width="370">
+
+<sub>The overlay card as it renders on stream. **The sheen loop is tightened here** —
+the real animation sweeps once every 9s and sits transparent in between, so this
+preview keeps the ~1s sweep and collapses the idle stretch into a single held frame.</sub>
+
+</div>
+
+---
 
 A simple desktop app that shows your Teamfight Tactics rank, LP gain/loss,
 session gains, and recent placement history on your Streamlabs or OBS stream
 with low latency — it talks to the Riot API directly, so there's no
 third-party service in the path adding its own rate limits.
+
+## What's on the card
+
+| | |
+|---|---|
+| **Rank + LP** | Current tier, division and LP. The LP figure rolls to its new value and a ▲/▼ marker shows the direction. |
+| **Progress bar** | LP remaining to the next tier. Hidden at Master+, where promotion is population-gated rather than an LP target. |
+| **Placement strip** | Your last 5 finishes, newest first — tonal, so it never competes with the LP readout. |
+| **Session line** | LP gained or lost this session, W-L record, and average placement. |
+| **Tier colours** | The accent ramp, crest bloom and promotion banner all repaint to the tier you're actually in. |
+
+## Every tier, and the moments that matter
+
+<div align="center">
+
+<img src="docs/overlay-iron.png" alt="Iron" width="340"> <img src="docs/overlay-silver.png" alt="Silver" width="340">
+
+<img src="docs/overlay-diamond.png" alt="Diamond" width="340"> <img src="docs/overlay-grandmaster.png" alt="Grandmaster" width="340">
+
+<img src="docs/overlay-promotion.png" alt="Promotion banner" width="340"> <img src="docs/overlay-demotion.png" alt="Demotion banner" width="340">
+
+<sub>A tier change takes the card over for ~2.6s in the colour of the tier you landed in —
+the single most clippable moment on a ranked stream.</sub>
+
+</div>
+
 ## Running it
 
 ```
@@ -49,6 +95,11 @@ The card itself is 370×108. Set the Browser Source slightly larger than
 that (say 400×130) — the page background is transparent, so surplus
 source area is invisible, while a source *smaller* than the card clips it.
 
+> **Want it bigger?** Add `?scale=1.5` to the URL. That re-renders the card
+> at the larger size, which stays sharp — unlike resizing the Browser Source
+> in OBS, which stretches an already-rendered 370×108 texture and goes soft.
+> Set the source to the scaled dimensions to match.
+
 ### Why Browser Source and not a captured window
 
 I looked at wrapping the overlay itself in the Electron window and having
@@ -69,6 +120,13 @@ OBS/Streamlabs capture that window instead. It's worse on every axis:
 So the app still runs the exact same local HTTP server approach — the
 GUI is just for configuring and monitoring it instead of editing files
 and env vars by hand.
+
+## Trying it without playing a game
+
+The **Test** tab drives the overlay through mock rank and LP changes
+without spending any of your API key's quota — simulate a win, a loss, a
+promotion, a demotion or an error and watch the card react. Use it to get
+your Browser Source positioned and sized before you go live.
 
 ## Building a distributable installer
 
@@ -133,6 +191,20 @@ AppleScript injection issue on macOS) only applied to apps using specific
 opt-in hardening flags or `app.moveToApplicationsFolder()` — neither of
 which this app does — but it was closed outright rather than argued.
 
+
+## Project layout
+
+No bundler and no build step — what's in `src/` is what runs.
+
+```
+src/
+├── shared/     tier + LP domain logic, loadable from Node and the browser alike
+├── main/       Electron main process: lifecycle, tray, window, settings, IPC
+├── preload/    the contextBridge surface (window.tftApp)
+├── renderer/   the settings/dashboard window
+├── overlay/    overlay.html and its styles/scripts — what OBS loads
+└── server/     Express + Riot polling, split into riot/, tracking/, crest/, routes/
+```
 
 ## Notes
 

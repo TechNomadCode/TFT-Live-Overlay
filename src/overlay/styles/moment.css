@@ -1,0 +1,51 @@
+/* Promotion / demotion takeover.
+
+   Previously a tier change was rendered by the <img> src silently swapping.
+   The single most clippable moment on a ranked stream had no treatment at
+   all. This holds the card for ~2.6s and then settles back to the readout. */
+
+.moment {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  /* The banner takes the colour of the tier you landed in, not a generic
+     green/red -- promoting into Gold should look like Gold. Direction is
+     carried by the verb instead, which is why it stays green/red. */
+  background: linear-gradient(135deg, var(--tier-deep), var(--tier-mid) 55%, var(--tier-deep));
+}
+.moment.show { opacity: 1; }
+
+.moment .verb {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+.moment .dest {
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+}
+
+.moment.up .verb   { color: var(--gain); }
+.moment.down .verb { color: var(--loss); }
+/* A demotion is knocked back a little, so dropping into a tier never looks as
+   bright as climbing into it. */
+.moment.down { filter: saturate(0.7) brightness(0.82); }
+
+.card.promoted,
+.card.demoted {
+  box-shadow: 0 0 0 2px var(--tier-ring), 0 4px 22px var(--tier-glow);
+  border-color: var(--tier-ring);
+}

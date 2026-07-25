@@ -30,3 +30,10 @@ ehthumbs.db
 # Agent tooling -- local machine state only. .claude/settings.json (shared
 # project config) and CLAUDE.md are meant to be committed.
 .claude/settings.local.json
+docs/TODO.txt
+
+# Docs GIF pipeline: the capture/encode scripts and their notes ARE committed,
+# the intermediate frames they emit are not -- ~2.7MB of regenerable PNGs whose
+# only meaningful output, docs/overlay-sheen.gif, is committed instead.
+docs/_gif-build/frame-*.png
+docs/_gif-build/frames.json

@@ -2,7 +2,7 @@
   "name": "tft-live-overlay",
   "version": "1.0.0",
   "description": "Tracks TFT rank and LP with low latency and presents them in an animated overlay for Streamlabs and OBS (Browser Source)",
-  "main": "main.js",
+  "main": "src/main/index.js",
   "author": "Tech Nomad (@Splenk__ on twitch for TFT streams)",
   "license": "MIT",
   "scripts": {
@@ -21,11 +21,7 @@
     "appId": "com.splenk.tftliveoverlay",
     "productName": "TFT Live Overlay",
     "files": [
-      "main.js",
-      "preload.js",
-      "overlay-server.js",
-      "public/**/*",
-      "renderer/**/*",
+      "src/**/*",
       "assets/**/*"
     ],
     "mac": {

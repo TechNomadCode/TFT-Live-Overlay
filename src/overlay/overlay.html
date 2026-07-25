@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>TFT Live Overlay</title>
+<!-- Served statically by the overlay server. The path /overlay.html is part of
+     the Browser Source URL users have already configured in OBS/Streamlabs, so
+     the filename must not change. -->
+<link rel="stylesheet" href="styles/tokens.css" />
+<link rel="stylesheet" href="styles/card.css" />
+<link rel="stylesheet" href="styles/readout.css" />
+<link rel="stylesheet" href="styles/moment.css" />
+</head>
+<body>
+
+<div class="card" id="card">
+  <div class="sheen"><i></i></div>
+
+  <div class="content-group">
+    <div class="emblem"><img id="emblem" src="" alt="rank crest" /></div>
+    <div class="info">
+      <div class="rank-row">
+        <span class="tier" id="tierRank">—</span>
+        <span class="lp"><span id="lpVal">0</span><span class="unit">LP</span></span>
+        <span class="lp-trend" id="lpTrend"></span>
+      </div>
+      <div class="goal-row hidden" id="goalRow">
+        <div class="goal-bar"><div class="goal-fill" id="goalFill"></div></div>
+        <span class="goal-label" id="goalLabel"></span>
+      </div>
+      <div class="placements-row" id="placements"></div>
+      <div class="session-row" id="sessionRow">
+        <span class="tag">SESSION</span>
+        <span class="amount" id="sessionLP">+0 LP</span>
+        <span class="sep">·</span>
+        <span class="stat" id="sessionRecord">0W-0L</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer" id="footer">
+    <span id="gameName">—</span><span class="tagline" id="tagLine"></span>
+    <span class="region" id="region"></span>
+  </div>
+  <div class="error" id="errorMsg"></div>
+
+  <div class="moment" id="moment">
+    <span class="verb">Promoted</span>
+    <span class="dest">—</span>
+  </div>
+</div>
+
+<!-- Classic scripts, not modules: the same script files have to run in the
+     settings window too, which Electron loads over file:// where ES modules are
+     blocked by CORS. Order matters — /shared and dom.js first, index.js last. -->
+<script src="/shared/tiers.js"></script>
+<script src="scripts/dom.js"></script>
+<script src="scripts/palette.js"></script>
+<script src="scripts/lp-meter.js"></script>
+<script src="scripts/rank-moment.js"></script>
+<script src="scripts/crest.js"></script>
+<script src="scripts/readout.js"></script>
+<script src="scripts/index.js"></script>
+
+</body>
+</html>

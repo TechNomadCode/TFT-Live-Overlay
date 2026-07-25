@@ -3,13 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <title>TFT Live Overlay</title>
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="styles/base.css" />
+<link rel="stylesheet" href="styles/shell.css" />
+<link rel="stylesheet" href="styles/controls.css" />
+<link rel="stylesheet" href="styles/preview.css" />
 </head>
 <body>
 
 <header class="topbar">
   <div class="brand">
-    <img src="../assets/icon-32.png" width="20" height="20" alt="" />
+    <img src="../../assets/icon-32.png" width="20" height="20" alt="" />
     <span>TFT Live Overlay</span>
   </div>
   <div class="status-pill" id="statusPill">
@@ -182,6 +185,16 @@
 
 </main>
 
-<script src="renderer.js"></script>
+<!-- Classic scripts, not ES modules: this window is loaded over file://, where
+     Chromium blocks module scripts on CORS grounds. Order matters — shared and
+     bridge first, index.js (which calls every init) last. -->
+<script src="../shared/tiers.js"></script>
+<script src="scripts/bridge.js"></script>
+<script src="scripts/tabs.js"></script>
+<script src="scripts/overlay-link.js"></script>
+<script src="scripts/settings-form.js"></script>
+<script src="scripts/test-panel.js"></script>
+<script src="scripts/status-view.js"></script>
+<script src="scripts/index.js"></script>
 </body>
 </html>

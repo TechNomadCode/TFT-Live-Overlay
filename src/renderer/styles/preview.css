@@ -1,0 +1,72 @@
+/* Live preview mini-card: the same visual language as the real overlay, scaled
+   down, so Settings changes are easy to sanity-check at a glance. It is a
+   separate implementation on purpose -- it shares the overlay's vocabulary, not
+   its layout, and must never grow the overlay's animation cost. */
+
+.preview-card { padding-bottom: 10px; }
+.preview-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 8px;
+}
+/* Checkerboard, so the overlay's transparent background is obvious here rather
+   than a surprise once it's in OBS. */
+.preview-frame {
+  background:
+    linear-gradient(45deg, #0d1119 25%, transparent 25%),
+    linear-gradient(-45deg, #0d1119 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #0d1119 75%),
+    linear-gradient(-45deg, transparent 75%, #0d1119 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+  background-color: #171c26;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.mini-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 300px;
+  height: 88px;
+  background: linear-gradient(135deg, #232c3d6b 0%, #232c3d 50%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  position: relative;
+}
+.mini-emblem { width: 60px; height: 60px; flex-shrink: 0; }
+.mini-emblem img { width: 100%; height: 100%; object-fit: contain; }
+.mini-info { display: flex; flex-direction: column; justify-content: center; }
+.mini-name { display: flex; align-items: baseline; gap: 5px; font-size: 11px; font-weight: 600; color: #cfd6e4; overflow: hidden; }
+.mini-who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini-region {
+  flex: 0 0 auto; font-size: 8px; font-weight: 700; line-height: 1; letter-spacing: 0.5px;
+  text-transform: uppercase; color: #8a96a8; border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 3px; padding: 2px 4px; transform: translateY(-1px);
+}
+.mini-tag { color: #7c8598; font-weight: 400; }
+.mini-rank { font-size: 13.5px; font-weight: 700; margin-top: 1px; }
+.mini-lp { color: var(--accent); }
+.mini-placements { display: flex; gap: 4px; align-items: center; margin-top: 2px; height: 18px; }
+.mini-placements .pl {
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 4px;
+  font-size: 11px; font-weight: 700; line-height: 1;
+  letter-spacing: 0; font-variant-numeric: tabular-nums;
+  transform: translateY(var(--pl-nudge));
+}
+.mini-placements .pl.first { color: #0a1520; background: #cfd6e4; border: 1px solid #cfd6e4; }
+.mini-placements .pl.top4  { color: #cfd6e4; background: rgba(207,214,228,0.07); border: 1px solid rgba(255,255,255,0.18); }
+.mini-placements .pl.bot4  { color: #6b7488; background: transparent; border: 1px solid rgba(255,255,255,0.08); }
+.mini-placements .pl.empty { color: #414959; background: transparent; border: 1px solid rgba(255,255,255,0.05); }
+.mini-session { font-size: 9.5px; font-weight: 600; color: var(--accent); margin-top: 1px; }
+.mini-session.positive { color: var(--green); }
+.mini-session.negative { color: var(--red); }

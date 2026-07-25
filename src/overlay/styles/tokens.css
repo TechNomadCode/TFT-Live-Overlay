@@ -1,0 +1,54 @@
+/* Design tokens and the page reset. Everything tier-reactive in the other
+   stylesheets reads the --tier-* custom properties from here, and scripts/
+   palette.js is the only thing that writes them. */
+
+:root {
+  /* If digits look a hair high or low on your system font, this is the one
+     value to touch -- e.g. 0.5px nudges them down. The residual is caused by
+     glyph hinting and differs per font, so it can't be fixed once for everyone. */
+  --pl-nudge: 0px;
+
+  /* Card footprint is deliberately unchanged from the previous version so an
+     existing OBS/Streamlabs Browser Source keeps working without being
+     resized. If you ever do change these, set the source a little LARGER
+     than the card -- the page background is transparent, so surplus source
+     area is invisible, while a source smaller than the card clips it. */
+  --card-w: 370px;
+  --card-h: 108px;
+
+  --text:  #e8edf5;
+  --dim:   #cfd6e4;
+  --muted: #8a96a8;
+  --cyan:  #7ee0ff;
+  --gain:  #00ff88;
+  --loss:  #ff4d4d;
+
+  /* Tier palette, re-set from JS on every rank change (see applyTierPalette).
+     These defaults only matter for the frames before the first poll lands.
+     Everything that reacts to a rank change -- the goal bar, the crest glow,
+     the promotion/demotion takeover -- draws from these, so the card takes on
+     the colour of the tier you're actually in. The steady-state readout does
+     NOT: cyan stays exclusive to the LP number and the placement strip stays
+     tonal, so the hierarchy survives. */
+  --tier-bright: #7ee0ff;
+  --tier-dim:    #4a8296;
+  --tier-mid:    #28464f;
+  --tier-deep:   #16272c;
+  --tier-ring:   rgba(126,224,255,0.55);
+  --tier-glow:   rgba(126,224,255,0.28);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+/* One place for every motion opt-out on the page. */
+@media (prefers-reduced-motion: reduce) {
+  .sheen i, .lp::after { animation: none !important; }
+  .goal-fill, .emblem img { transition: none !important; }
+}
