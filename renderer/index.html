@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>TFT Live Overlay</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="../assets/icon-32.png" width="20" height="20" alt="" />
+    <span>TFT Live Overlay</span>
+  </div>
+  <div class="status-pill" id="statusPill">
+    <span class="dot" id="statusDot"></span>
+    <span id="statusText">Starting…</span>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+  <button class="tab-btn" data-tab="settings">Settings</button>
+  <button class="tab-btn" data-tab="test">Test</button>
+</nav>
+
+<main>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section id="tab-dashboard" class="tab-panel active">
+    <div class="card preview-card">
+      <div class="preview-label">Live Preview</div>
+      <div class="preview-frame">
+        <div class="mini-card" id="miniCard">
+          <div class="mini-emblem"><img id="miniEmblem" alt="" /></div>
+          <div class="mini-info">
+            <div class="mini-name"><span class="mini-who"><span id="miniName">—</span><span class="mini-tag" id="miniTag"></span></span><span class="mini-region" id="miniRegion"></span></div>
+            <div class="mini-rank"><span id="miniTier">—</span> <span class="mini-lp" id="miniLp"></span></div>
+            <div class="mini-placements" id="miniPlacements"></div>
+            <div class="mini-session" id="miniSession">Session: +0 LP (0W - 0L)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row-between">
+        <div>
+          <div class="field-label">Overlay URL for Streamlabs / OBS</div>
+          <code class="url-box" id="overlayUrl">http://localhost:3000/overlay.html</code>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="copyUrlBtn">Copy URL</button>
+        <button class="btn" id="openBrowserBtn">Open in Browser</button>
+      </div>
+      <p class="hint">
+        Add a <strong>Browser Source</strong> in Streamlabs/OBS pointing to this URL.
+        This is the fastest rendering path available &mdash; Streamlabs renders
+        Browser Sources with its own lightweight Chromium compositor, so there's
+        nothing to gain (and real overhead to lose) from capturing this app's
+        window instead.
+      </p>
+    </div>
+
+    <div class="card" id="errorCard" style="display:none;">
+      <div class="field-label error-label">Last Error</div>
+      <div class="error-text" id="errorText"></div>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="tab-settings" class="tab-panel">
+    <div class="card">
+      <label class="field-label" for="gameName">Riot ID — Name</label>
+      <input class="input" id="gameName" placeholder="in-game name" />
+
+      <label class="field-label" for="tagLine">Riot ID — Tag</label>
+      <input class="input" id="tagLine" placeholder="1234 (without the #)" />
+
+      <label class="field-label" for="platformRoute">Region / Server</label>
+      <select class="input" id="platformRoute">
+        <option value="euw1">EUW — Europe West</option>
+        <option value="eun1">EUNE — Europe Nordic &amp; East</option>
+        <option value="tr1">TR — Turkey</option>
+        <option value="ru">RU — Russia</option>
+        <option value="na1">NA — North America</option>
+        <option value="br1">BR — Brazil</option>
+        <option value="la1">LAN — Latin America North</option>
+        <option value="la2">LAS — Latin America South</option>
+        <option value="oc1">OCE — Oceania</option>
+        <option value="kr">KR — Korea</option>
+        <option value="jp1">JP — Japan</option>
+      </select>
+
+      <label class="field-label" for="riotApiKey">Riot API Key</label>
+      <input class="input" id="riotApiKey" type="password" placeholder="RGAPI-xxxxxxxx-xxxx-xxxx" />
+      <p class="hint">
+        Get a personal key from
+        <a href="#" id="devPortalLink">developer.riotgames.com</a>.
+        Personal keys expire every 24h &mdash; just paste in a fresh one here,
+        no restart needed.
+      </p>
+
+      <label class="field-label" for="pollInterval">Poll Interval</label>
+      <select class="input" id="pollInterval">
+        <option value="5000" selected>5 seconds</option>
+        <option value="10000">10 seconds</option>
+        <option value="15000">15 seconds</option>
+        <option value="30000">30 seconds</option>
+        <option value="60000">60 seconds</option>
+      </select>
+      <p class="hint">
+        LP only updates after Riot finishes processing a completed match,
+        so polling faster than a few seconds doesn't get you fresher data
+        sooner &mdash; but 5s is safely within a personal key's rate limit
+        (100 requests/2min), so there's no real cost to keeping it snappy.
+      </p>
+
+      <div class="btn-row">
+        <button class="btn primary" id="saveSettingsBtn">Save Settings</button>
+      </div>
+      <div class="save-confirm" id="saveConfirm"></div>
+    </div>
+  </section>
+
+  <!-- ============ TEST ============ -->
+  <section id="tab-test" class="tab-panel">
+    <div class="card">
+      <div class="row-between">
+        <div class="field-label" style="margin:0;">Mock Mode</div>
+        <label class="switch">
+          <input type="checkbox" id="mockToggle" />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <p class="hint">
+        Pauses live Riot polling so you can preview overlay changes instantly
+        without waiting on real matches.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="field-label">Simulate Match Result</div>
+      <div class="btn-grid">
+        <button class="btn win" data-lp="38" data-placement="1">1st &nbsp;+38 LP</button>
+        <button class="btn win" data-lp="18" data-placement="3">3rd &nbsp;+18 LP</button>
+        <button class="btn loss" data-lp="-14" data-placement="5">5th &nbsp;-14 LP</button>
+        <button class="btn loss" data-lp="-32" data-placement="8">8th &nbsp;-32 LP</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field-label">Simulate Rank</div>
+      <div class="btn-row">
+        <select class="input" id="testTier">
+          <option>IRON</option><option>BRONZE</option><option>SILVER</option>
+          <option>GOLD</option><option>PLATINUM</option><option>EMERALD</option>
+          <option selected>DIAMOND</option><option>MASTER</option>
+          <option>GRANDMASTER</option><option>CHALLENGER</option>
+        </select>
+        <select class="input" id="testRank">
+          <option>IV</option><option>III</option><option>II</option><option>I</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="applyRankBtn" style="flex:1;">Apply</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field-label">Simulate Error / Reset</div>
+      <div class="btn-grid">
+        <button class="btn" id="triggerErrorBtn">Trigger Error</button>
+        <button class="btn" id="clearErrorBtn">Clear Error</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="resetSessionBtn" style="flex:1;">Reset Session Metrics</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="renderer.js"></script>
+</body>
+</html>

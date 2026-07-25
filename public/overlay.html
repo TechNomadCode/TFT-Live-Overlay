@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>TFT Live Overlay</title>
+<style>
+  /* If digits look a hair high or low on your system font, this is the one
+     value to touch -- e.g. 0.5px nudges them down. The residual is caused by
+     glyph hinting and differs per font, so it can't be fixed once for everyone. */
+  :root { --pl-nudge: 0px; }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+
+  /* Fixed, locked overlay container */
+  .card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* centers the emblem+info group as a unit */
+    gap: 12px;
+    width: 370px;
+    height: 108px;
+    background: linear-gradient(135deg, #212c41ea 0%, #212c41ea 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px 14px 18px 45px;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+    overflow: hidden;
+    isolation: isolate; /* lets the LP glow sit behind text but above the panel */
+  }
+
+  /* Continuous sheen. Measured at +0.15% CPU: the band is small and its
+     keyframes hold constant for ~89% of the cycle, so the compositor has
+     nothing to redraw most of the time and effectively self-throttles.
+     The fade-out happens AT the end position and the jump back to the start
+     happens while fully transparent -- doing both at once made the band
+     visibly fly backwards for ~45ms at the end of each loop. */
+  .sheen {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .sheen i {
+    position: absolute;
+    top: -25%;
+    bottom: -25%;
+    left: 0;
+    width: 78px;
+    display: block;
+    opacity: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    transform: translateX(-150px) skewX(-18deg);
+    will-change: transform, opacity;
+    animation: sheenLoop 9s linear infinite;
+  }
+  @keyframes sheenLoop {
+    0%     { opacity: 0; transform: translateX(-150px) skewX(-18deg); }
+    2%     { opacity: 1; }
+    10%    { opacity: 1; transform: translateX(450px) skewX(-18deg); }
+    10.8%  { opacity: 0; transform: translateX(450px) skewX(-18deg); }
+    10.9%  { opacity: 0; transform: translateX(-150px) skewX(-18deg); }
+    100%   { opacity: 0; transform: translateX(-150px) skewX(-18deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sheen i, .lp::after { animation: none !important; }
+  }
+
+  /* Fixed Emblem Box */
+  .content-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .emblem {
+    width: 110px;
+    height: 110px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .emblem img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* images are pre-trimmed server-side to their
+                             actual artwork bbox, so plain contain is
+                             enough — no per-tier zoom hack needed */
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.45));
+  }
+
+  /* Info Column - FIXED width so switching tiers (IRON vs GRANDMASTER,
+     very different text lengths) never changes the group's total width
+     and never shifts the icon's position. */
+  .info {
+    flex: 0 0 auto;
+    width: 205px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /* Row 1: Player Name */
+  .name-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #cfd6e4;
+    line-height: 1.2;
+    margin-bottom: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    /* no reserved padding needed — the delta badge is absolutely
+       positioned and floats independently of this element's box */
+  }
+  /* The name truncates; the region never does. */
+  .name-row .who {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .name-row .tag {
+    color: #7c8598;
+    font-weight: 400;
+  }
+  .name-row .region {
+    flex: 0 0 auto;
+    font-size: 8.5px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #8a96a8;
+    border: 1px solid rgba(255,255,255,0.13);
+    border-radius: 3px;
+    padding: 2px 4px;
+    transform: translateY(-1px);
+  }
+
+  /* Row 2: Rank & LP */
+  .rank-row {
+    display: flex;
+    align-items: baseline;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+    margin-bottom: 2px;
+    white-space: nowrap;
+  }
+
+  .lp {
+    color: #7ee0ff;
+    font-weight: 700;
+    margin-left: 6px;
+    position: relative;
+  }
+  .lp::after {
+    content: '';
+    position: absolute;
+    inset: -40% -18%;
+    z-index: -1;
+    background: radial-gradient(ellipse, rgba(126,224,255,0.40), transparent 70%);
+    opacity: 0.15;
+    will-change: opacity;
+    animation: lpBreathe 5s ease-in-out infinite;
+  }
+  @keyframes lpBreathe { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.55; } }
+
+  /* Row 3: last 5 placements, newest on the left. Fixed slot count and fixed
+     chip size so the row's footprint never changes as results come in. */
+  .placements-row {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 2px;
+    height: 18px;
+  }
+  /* Square and even-sized on purpose. Flex centring is sub-pixel accurate,
+     but with an odd-width / non-square box the rasteriser rounds the glyph
+     the same direction every time -- measured as a consistent 0.5px upward
+     lean at 17x16. 18x18 puts the centre on a whole pixel and that goes to
+     zero, without a font-specific nudge (the required nudge flips sign
+     between fonts, so hard-coding one would break on someone else's box). */
+  .pl {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+    transform: translateY(var(--pl-nudge));
+  }
+  /* Tonal: hierarchy by brightness only, so cyan stays exclusive to the LP
+     number and the strip never competes with it. Also survives colourblind
+     viewers and OBS colour shifts, since the signal is luminance not hue. */
+  .pl.first { color: #0a1520; background: #cfd6e4; border: 1px solid #cfd6e4; }
+  .pl.top4  { color: #cfd6e4; background: rgba(207,214,228,0.07); border: 1px solid rgba(255,255,255,0.18); }
+  .pl.bot4  { color: #6b7488; background: transparent; border: 1px solid rgba(255,255,255,0.08); }
+  .pl.empty { color: #414959; background: transparent; border: 1px solid rgba(255,255,255,0.05); }
+
+  /* Row 4: Session W/L */
+  .session-row {
+    font-size: 14px;
+    font-weight: 600;
+    color: #7ee0ff;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .session-row.positive { color: #00ff88; }
+  .session-row.negative { color: #ff4d4d; }
+
+  /* Broadcast HUD Top-Right Notification Pill */
+  .delta-badge {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 5px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 12px;
+    letter-spacing: 0.3px;
+    opacity: 0;
+    transform: translateY(-4px) scale(0.9);
+    transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .delta-badge.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  .delta-badge.gain {
+    background: #00ff8822;
+    color: #00ff88;
+    border: 1px solid #00ff8855;
+  }
+  .delta-badge.loss {
+    background: #ff4d4d22;
+    color: #ff4d4d;
+    border: 1px solid #ff4d4d55;
+  }
+
+  /* Bottom-right footer slot: error and credit share this exact spot
+     and are mutually exclusive, so they can never collide. */
+  .error,
+  .credit {
+    position: absolute;
+    bottom: 3px;
+    right: 12px;
+    max-width: 200px;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
+
+  .error {
+    color: #ff6b6b;
+    font-size: 9.5px;
+    font-weight: 600;
+    display: none; /* shown via .visible when an error is present */
+  }
+  .error.visible {
+    display: block;
+  }
+
+  .credit {
+    font-size: 8.5px;
+    color: rgba(255, 255, 255, 0.65);
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+    font-weight: 600;
+    user-select: none;
+  }
+  .credit.hidden {
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <!-- Top-Right Floating Event Pill -->
+  <div id="deltaBadge" class="delta-badge">+0 LP</div>
+  <div class="sheen"><i></i></div>
+
+  <div class="content-group">
+    <div class="emblem"><img id="emblem" src="" alt="rank crest" /></div>
+    <div class="info">
+      <div class="name-row">
+        <span class="who"><span id="gameName">—</span><span class="tag" id="tagLine"></span></span>
+        <span class="region" id="region"></span>
+      </div>
+      <div class="rank-row">
+        <span id="tierRank">—</span> 
+        <span class="lp"><span id="lpVal">0</span> LP</span>
+      </div>
+      <div class="placements-row" id="placements"></div>
+      <div class="session-row" id="sessionRecord">Session: +0 LP (0W - 0L)</div>
+    </div>
+  </div>
+  
+  <!-- Bottom Footer Elements -->
+  <div class="error" id="errorMsg"></div>
+  <div class="credit" id="creditLabel">Made by @Splenk</div>
+</div>
+
+<script>
+  // Served by our own server (see overlay-server.js /api/crest/:tier), which
+  // fetches the source PNG and trims it to its real artwork bounding box
+  // once, then caches it. Same-origin, so no CORS concerns, and every
+  // tier renders at a consistent visual size with plain object-fit:contain.
+  const CREST_BASE = '/api/crest/';
+
+  const TIER_FILE = {
+    IRON: 'iron', BRONZE: 'bronze', SILVER: 'silver', GOLD: 'gold',
+    PLATINUM: 'platinum', EMERALD: 'emerald', DIAMOND: 'diamond',
+    MASTER: 'master', GRANDMASTER: 'grandmaster', CHALLENGER: 'challenger'
+  };
+
+  let currentDisplayedLP = 0;
+  let isFirstLoad = true;
+  let badgeTimeout = null;
+  let lpAnimationFrameId = null;
+  let lastSeenDeltaSeq = null;
+  let lastCrestFile = null;
+
+  // Always renders PLACEMENT_SLOTS chips so the row can't change size as
+  // history fills in. Diffs the markup before writing, same idea as
+  // setSafeText -- avoids pointless DOM churn on every 2.5s poll.
+  const PLACEMENT_SLOTS = 5;
+  function renderPlacements(list) {
+    const el = document.getElementById('placements');
+    if (!el) return;
+    let html = '';
+    for (let i = 0; i < PLACEMENT_SLOTS; i++) {
+      const p = list[i];
+      if (typeof p === 'number') {
+        const cls = p === 1 ? 'first' : p <= 4 ? 'top4' : 'bot4';
+        html += `<span class="pl ${cls}">${p}</span>`;
+      } else {
+        html += '<span class="pl empty">-</span>';
+      }
+    }
+    if (el.innerHTML !== html) el.innerHTML = html;
+  }
+
+  function setSafeText(id, text) {
+    const el = document.getElementById(id);
+    if (el && el.textContent !== text) {
+      el.textContent = text;
+    }
+  }
+
+  // Smooth numerical roll-up / roll-down animation, same as any normal
+  // gain/loss. `delta` is only used for the badge (server-computed via
+  // absolute LP, so it stays correctly signed across a promotion) --
+  // it's intentionally decoupled from the visible number, which just
+  // rolls between whatever the old and new raw LP values are, exactly
+  // like every other LP change.
+  function animateLP(targetLP, delta, isNewDelta) {
+    if (isFirstLoad) {
+      currentDisplayedLP = targetLP;
+      document.getElementById('lpVal').textContent = targetLP;
+      isFirstLoad = false;
+      return;
+    }
+
+    if (lpAnimationFrameId !== null) {
+      cancelAnimationFrame(lpAnimationFrameId);
+      lpAnimationFrameId = null;
+    }
+
+    // isNewDelta guards against re-firing the badge on every poll --
+    // the server's lastDelta value persists in latestData until the next
+    // actual match, so without this the badge would re-trigger (and its
+    // fade-out timer would keep resetting) on every single poll cycle
+    // forever, making it look permanently stuck instead of fading out.
+    if (delta && isNewDelta) showDeltaBadge(delta);
+
+    if (currentDisplayedLP === targetLP) return;
+
+    const startLP = currentDisplayedLP;
+    const diff = targetLP - startLP;
+    const duration = 1200;
+    const startTime = performance.now();
+
+    function updateNumber(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      
+      currentDisplayedLP = Math.round(startLP + (diff * easeProgress));
+      document.getElementById('lpVal').textContent = currentDisplayedLP;
+
+      if (progress < 1) {
+        lpAnimationFrameId = requestAnimationFrame(updateNumber);
+      } else {
+        currentDisplayedLP = targetLP;
+        document.getElementById('lpVal').textContent = targetLP;
+        lpAnimationFrameId = null;
+      }
+    }
+
+    lpAnimationFrameId = requestAnimationFrame(updateNumber);
+  }
+
+  // Show floating top-right notification pill on LP gain/loss
+  function showDeltaBadge(delta) {
+    const badge = document.getElementById('deltaBadge');
+    if (!badge || delta === 0) return;
+
+    clearTimeout(badgeTimeout);
+
+    badge.textContent = (delta > 0 ? '▲ +' : '▼ ') + delta + ' LP';
+    badge.className = 'delta-badge show ' + (delta > 0 ? 'gain' : 'loss');
+
+    badgeTimeout = setTimeout(() => {
+      badge.className = 'delta-badge';
+    }, 3500);
+  }
+
+  async function refresh() {
+    try {
+      const res = await fetch('/api/rank', { cache: 'no-store' });
+      const data = await res.json();
+
+      setSafeText('gameName', data.gameName || '—');
+      setSafeText('tagLine', data.tagLine ? ' #' + data.tagLine : '');
+      const regionEl = document.getElementById('region');
+      setSafeText('region', data.region || '');
+      regionEl.style.display = data.region ? '' : 'none';
+      setSafeText('tierRank', data.tier === 'UNRANKED' ? 'Unranked' : `${data.tier} ${data.rank}`);
+      renderPlacements(data.recentPlacements || []);
+
+      // Error and credit share one footer slot — only one shows at a time.
+      const errorEl = document.getElementById('errorMsg');
+      const creditEl = document.getElementById('creditLabel');
+      if (data.error) {
+        setSafeText('errorMsg', 'Overlay: ' + data.error);
+        errorEl.classList.add('visible');
+        creditEl.classList.add('hidden');
+      } else {
+        errorEl.classList.remove('visible');
+        creditEl.classList.remove('hidden');
+      }
+
+      // Smooth LP animation -- the number always rolls the same way
+      // whether it's a normal gain/loss or a promotion; only the badge
+      // (which uses the server's absolute-LP-based delta) needs the
+      // promotion-aware math, since it has to stay correctly signed.
+      // isNewDelta prevents the badge from re-firing on every poll for
+      // the same stale event.
+      if (data.tier !== 'UNRANKED') {
+        const isNewDelta = data.deltaSeq !== undefined && data.deltaSeq !== lastSeenDeltaSeq;
+        animateLP(data.leaguePoints || 0, data.lastDelta || 0, isNewDelta);
+        lastSeenDeltaSeq = data.deltaSeq;
+      }
+
+      // Update Session Row
+      const sessionEl = document.getElementById('sessionRecord');
+      const sessLP = data.sessionLP || 0;
+      const sessSign = sessLP >= 0 ? '+' : '';
+      const avg = data.sessionAvgPlacement;
+      const sessionText = `Session: ${sessSign}${sessLP} LP`;
+      
+      setSafeText('sessionRecord', sessionText);
+      
+      if (sessLP > 0) {
+        sessionEl.className = 'session-row positive';
+      } else if (sessLP < 0) {
+        sessionEl.className = 'session-row negative';
+      } else {
+        sessionEl.className = 'session-row';
+      }
+
+      // Update emblem image safely — never assign an empty string to
+      // img.src: browsers treat that as "reload the current page as an
+      // image", which is exactly the broken-icon bug from before. If the
+      // tier is unranked/unrecognized, just leave whatever was showing.
+      const crestFile = TIER_FILE[data.tier];
+      const imgEl = document.getElementById('emblem');
+      if (crestFile) {
+        // Compare the *tier file*, not the src. imgEl.src reads back as a
+        // resolved absolute URL ("http://localhost:3000/api/crest/diamond")
+        // while CREST_BASE + crestFile is relative ("/api/crest/diamond"),
+        // so comparing them was always unequal and reassigned src on every
+        // single poll forever -- which re-requested the crest every 2.5s
+        // (and, whenever the source CDN was unreachable, turned into an
+        // unbounded retry storm since failures aren't cached).
+        if (crestFile !== lastCrestFile) {
+          imgEl.src = CREST_BASE + crestFile;
+          lastCrestFile = crestFile;
+        }
+        imgEl.style.visibility = 'visible';
+      } else {
+        imgEl.style.visibility = 'hidden';
+      }
+    } catch (e) {
+      setSafeText('errorMsg', 'Overlay: cannot reach local server');
+    }
+  }
+
+  refresh();
+  setInterval(refresh, 2500);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build & packaging outputs
+dist/
+out/
+build/
+
+# Runtime / local user data
+# The app writes its real settings to app.getPath('userData'), but ignore any
+# stray copy in the repo -- it holds a Riot API key.
+settings.json
+.env
+.env.*
+*.local
+*.log
+npm-debug.log*
+
+# OS & System files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# IDE & Code Editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Agent tooling -- local machine state only. .claude/settings.json (shared
+# project config) and CLAUDE.md are meant to be committed.
+.claude/settings.local.json

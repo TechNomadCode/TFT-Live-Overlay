@@ -1,0 +1,14 @@
+# Normalize line endings: LF in the repo, native in the working tree.
+# Without this, developing on Windows commits CRLF and every cross-platform
+# checkout shows whole files as modified.
+* text=auto
+
+# Binary assets -- never touch these.
+*.png binary
+*.ico binary
+*.icns binary
+*.jpg binary
+*.webp binary
+
+# Keep the lockfile out of diffs and merge-conflict noise in reviews.
+package-lock.json -diff linguist-generated
