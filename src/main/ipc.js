@@ -16,9 +16,13 @@ const { loadSettings, saveSettings } = require('./settings-store');
 function registerIpcHandlers({ getOverlayServer, requestQuit }) {
   ipcMain.handle('get-settings', () => loadSettings());
 
+  // Merge rather than replace. The renderer builds this object from the form
+  // fields it owns, so a bare write would drop every key it doesn't know about
+  // -- window geometry today, anything added later.
   ipcMain.handle('save-settings', (event, settings) => {
-    saveSettings(settings);
-    getOverlayServer().updateConfig(settingsToServerConfig(settings));
+    const merged = { ...loadSettings(), ...settings };
+    saveSettings(merged);
+    getOverlayServer().updateConfig(settingsToServerConfig(merged));
     return { ok: true };
   });
 

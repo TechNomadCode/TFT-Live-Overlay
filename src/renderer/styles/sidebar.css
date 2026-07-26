@@ -1,0 +1,203 @@
+/* The left rail: brand, live status readout, navigation, quit.
+ *
+ * The status readout used to be an 11px pill wedged into a top bar next to the
+ * app name. It is the one thing a streamer actually looks at mid-game, so it
+ * gets real estate here instead of competing with the wordmark. */
+
+.sidebar {
+  background: var(--bg-sunken);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  padding: var(--s4) var(--s3);
+  overflow: hidden;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--s1) var(--s2) 0;
+}
+.brand img {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  flex-shrink: 0;
+}
+.brand-name {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+.brand-name em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ---- status readout ---- */
+.status {
+  background: rgba(255,255,255,0.028);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 10px var(--s3) var(--s3);
+}
+.status-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.status-label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--dim);
+}
+.status-rank {
+  margin-top: 9px;
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.status-rank .lp { color: var(--cyan); }
+.status-sub {
+  margin-top: 3px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.status-sub .gain { color: var(--gain); }
+.status-sub .loss { color: var(--loss); }
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+.dot.ok {
+  background: var(--gain);
+  box-shadow: 0 0 8px rgba(63,221,146,0.55);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+.dot.warn {
+  background: var(--warn);
+  box-shadow: 0 0 8px rgba(255,180,84,0.5);
+}
+.dot.error {
+  background: var(--loss);
+  box-shadow: 0 0 8px rgba(255,95,95,0.5);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* ---- navigation ---- */
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-height: 0;
+}
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: var(--control-h);
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--r-md);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.nav-item svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.nav-item:hover {
+  background: rgba(255,255,255,0.045);
+  color: var(--dim);
+}
+.nav-item.active {
+  background: var(--cyan-wash);
+  color: var(--cyan);
+}
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--cyan);
+}
+/* Unread-style marker for practice mode, so leaving it on is visible from any
+   page -- the whole failure it prevents is streaming fake LP. */
+.nav-item .pip {
+  margin-left: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--warn);
+  display: none;
+}
+.nav-item.flagged .pip { display: block; }
+
+/* ---- footer ---- */
+.side-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.quit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  height: 32px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.quit:hover {
+  background: rgba(255,95,95,0.06);
+  border-color: rgba(255,95,95,0.4);
+  color: var(--loss);
+}
+.quit svg { width: 14px; height: 14px; }
+
+.side-note {
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--faint);
+  text-align: center;
+}

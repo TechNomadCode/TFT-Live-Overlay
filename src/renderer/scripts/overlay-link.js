@@ -1,4 +1,4 @@
-// The Dashboard card that hands the user their Browser Source URL.
+// The Overlay page card that hands the user their Browser Source URL.
 
 (function (ns) {
   'use strict';

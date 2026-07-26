@@ -4,7 +4,7 @@
 // file only decides when they come up and when they go down.
 
 const path = require('path');
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, Menu, dialog } = require('electron');
 
 const { APP_NAME, OVERLAY_PORT } = require('./constants');
 const { createMainWindow } = require('./windows/main-window');
@@ -81,6 +81,11 @@ async function startOverlayServer() {
 
 if (gotSingleInstanceLock) {
   app.whenReady().then(async () => {
+    // Electron's default File/Edit/View/Window/Help bar is inherited, not
+    // designed -- none of it applies to a single-window tray app, and it's the
+    // first thing you see. The window's own UI is the only chrome here.
+    Menu.setApplicationMenu(null);
+
     mainWindow = createMainWindow({ isQuitting: () => isQuitting });
     tray = createTray({ onOpenSettings: showMainWindow, onQuit: requestQuit });
     registerIpcHandlers({ getOverlayServer: () => overlayServer, requestQuit });

@@ -94,7 +94,7 @@
     const footerEl = ns.el('footer');
 
     if (pending) {
-      ns.setSafeText('waitReason', message || 'Add your Riot ID and API key in Settings');
+      ns.setSafeText('waitReason', message || 'Add your Riot ID and API key in Account');
       errorEl.classList.remove('visible');
       footerEl.classList.remove('hidden');
       return;

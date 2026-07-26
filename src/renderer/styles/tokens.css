@@ -1,0 +1,60 @@
+/* Design tokens for the app window.
+ *
+ * Names are deliberately the same as src/overlay/styles/tokens.css where the
+ * two surfaces mean the same thing (--text, --dim, --muted, --cyan, --gain,
+ * --loss), so one vocabulary covers the card and the app that configures it.
+ * The values differ where the surfaces differ: the card is glanced at for half
+ * a second over a game, this window is read.
+ *
+ * Everything below is a token because nothing here was one before -- every
+ * padding, radius and font-size in this window used to be a literal, which is
+ * most of why it never felt like one product. */
+
+:root {
+  /* Surfaces, darkest to lightest. --bg matches the BrowserWindow's
+     backgroundColor in src/main/windows/main-window.js; keep them equal or the
+     window flashes a different colour before the first paint. */
+  --bg:             #0f1218;
+  --bg-sunken:      #0a0d13;
+  --surface:        #161b26;
+  --surface-raised: #1e2532;
+  --border:         rgba(255,255,255,0.07);
+  --border-strong:  rgba(255,255,255,0.14);
+
+  --text:  #e8edf5;
+  --dim:   #b3bdcd;
+  --muted: #7d8798;
+  --faint: #5d6675;
+
+  --cyan:      #7ee0ff;
+  --cyan-deep: #3f93b0;
+  --cyan-wash: rgba(126,224,255,0.10);
+
+  /* The overlay's --gain/--loss, dialled back. #00ff88 reads as a highlight at
+     30px on a card you glance at; at 12px on a form you stare at, it buzzes. */
+  --gain: #3fdd92;
+  --loss: #ff5f5f;
+  --warn: #ffb454;
+
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 15px;
+  --fs-xl: 20px;
+
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+
+  --shadow-card: 0 1px 0 rgba(255,255,255,0.04) inset, 0 6px 20px rgba(0,0,0,0.30);
+
+  --sidebar-w: 232px;
+  --control-h: 34px;
+}

@@ -41,9 +41,13 @@ assets/         app/tray icons (outside src/, referenced by electron-builder)
   `window.tftApp` via `contextBridge`. `contextIsolation: true`,
   `nodeIntegration: false`. Adding a renderer capability means adding it here
   *and* in `main/ipc.js`.
-- **`src/renderer/`** — the settings/dashboard window (plain HTML/CSS/JS, no
-  framework). Three tabs: Dashboard, Settings, Test. Scripts are split by
-  panel, each exposing one `init`, called from `scripts/index.js`.
+- **`src/renderer/`** — the app window (plain HTML/CSS/JS, no framework). A
+  fixed sidebar and four pages: Overlay, Account, Practice, Help. Scripts are
+  split by panel, each exposing one `init`, called from `scripts/index.js`.
+  `styles/tokens.css` loads first and everything else is written against it —
+  no literal colours, spacing or font sizes outside that file. The Overlay
+  page's preview is an **iframe of the real overlay**, not a re-implementation;
+  see the comment in `styles/preview.css` for why.
 - **`src/overlay/overlay.html`** — the overlay itself. Served statically at
   `http://localhost:3000/overlay.html`; polls `GET /api/rank` every 2.5s. This
   is what OBS loads, and the path is baked into Browser Sources users have
@@ -73,11 +77,11 @@ matters** — `/shared` and the helper modules first, `index.js` last.
   intentionally share one LP base — see the comment on `TIER_BASE` before
   "fixing" it.
 - **`applyLPChange` is mock-mode only.** The live path reads tier/rank/LP
-  straight from Riot and never calls it. Its only job is making the Test tab
-  behave like the real ladder, so a divergence there means an overlay code path
-  you can't exercise before it happens on stream.
+  straight from Riot and never calls it. Its only job is making the Practice
+  page behave like the real ladder, so a divergence there means an overlay code
+  path you can't exercise before it happens on stream.
 - **Mock mode writes into the same state the live path writes.** That's
-  deliberate — it's the only way the Test tab exercises real code paths — which
+  deliberate — it's the only way the Practice page exercises real code paths — which
   is why `tracker-state.js` exists as a named owner, and why
   `mock-controller.js` snapshots *and* restores both it and the placement
   tracker on the way in and out.
@@ -88,6 +92,23 @@ matters** — `/shared` and the helper modules first, `index.js` last.
 - **Placement lags LP.** Riot's match index updates after the league entry, so
   placements are fetched on a retry ladder (`PLACEMENT_CATCHUP_DELAYS_MS`).
   A placement that shows up seconds late is expected behavior, not a bug.
+- **Error strings from `riot/client.js` are UI copy, not diagnostics.**
+  `state.data.error` is rendered by the overlay into a 222px-wide, 10.5px footer
+  band — on stream, in front of viewers. Riot answers failures with a JSON body,
+  and interpolating it into the thrown `Error` put
+  `Overlay: Riot API 401: {"status":{"message":"Forbid…` on the card, truncated
+  mid-object. The client now maps status codes to short sentences (keep them
+  under ~30 characters) and logs the raw body separately. Don't put a response
+  body, a stack, or a URL into a thrown message on this path.
+- **A poll is two awaited round-trips, so it can outlive the config it started
+  with.** Saving a new Riot ID mid-flight let the old identity's 404 land after
+  `resetIdentity()` and overwrite fresh state. `rank-tracker.js` keeps an
+  `identityEpoch`; each poll captures it and drops its result if it no longer
+  matches. Any new `await` added inside `poll()` needs the same guard after it.
+- **`settings.json` holds window geometry as well as the Riot config.** The
+  renderer builds its save payload from the form fields it owns, so
+  `ipc.js`'s `save-settings` merges rather than replaces — a bare write drops
+  every key the form doesn't know about.
 - **Motion is gated on a class, not on `prefers-reduced-motion`.** It used to be
   the media query, and one OS checkbox — Windows' "Show animations in Windows",
   or the "Adjust for best performance" preset that every gaming guide
@@ -109,18 +130,24 @@ matters** — `/shared` and the helper modules first, `index.js` last.
 
 ## Testing
 
-There's no automated test suite. Manual verification runs through the **Test**
-tab / `POST /api/test/event` and `POST /api/test/toggle-mock`, which drive mock
-rank and LP changes without burning API quota. Use mock mode for any UI work.
+There's no automated test suite. Manual verification runs through the
+**Practice** page / `POST /api/test/event` and `POST /api/test/toggle-mock`,
+which drive mock rank and LP changes without burning API quota. Use practice
+mode for any UI work.
+
+The app window is the only place the overlay's *live* rendering is visible
+alongside the controls, since the Overlay page embeds the real card. Driving a
+state and watching that iframe is the fastest check for anything that touches
+`readout.js` or the materials.
 
 For a machine you don't have access to, `src/overlay/scripts/selfcheck.js` is
 the channel: the overlay measures its own environment — whether the animation
 *clocks* are advancing (not whether a frame looks different, which the sheen's
 89%-idle keyframes make useless), whether each stylesheet returned rules, the
 Chromium version, the GPU — and POSTs it to `/api/diag`, which appends a
-verdict to `logs/overlay.log` in `userData`. Dashboard → Troubleshooting
-surfaces it. `diag-log.js` scrubs anything matching a Riot key on the way in
-and out, because the whole point of that file is that users send it to people.
+verdict to `logs/overlay.log` in `userData`. Help → Send a report surfaces it.
+`diag-log.js` scrubs anything matching a Riot key on the way in and out, because
+the whole point of that file is that users send it to people.
 
 `src/server` has no Electron dependency, so it can be driven from plain Node
 for a smoke test without launching the app:

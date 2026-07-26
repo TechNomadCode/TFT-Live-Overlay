@@ -1,7 +1,7 @@
 // The mutable state behind /api/rank, in one place.
 //
 // It lives in its own module because two things write to it: the live poll
-// (rank-tracker) and the Test tab (mock-controller). Giving them a shared,
+// (rank-tracker) and the Practice page (mock-controller). Giving them a shared,
 // named owner is what makes "mock writes into the very same state the live
 // path uses" an explicit design decision rather than an accident waiting to
 // diverge -- and it's what lets mock snapshot/restore it wholesale.

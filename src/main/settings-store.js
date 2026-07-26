@@ -36,4 +36,27 @@ function saveSettings(settings) {
   fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2), 'utf8');
 }
 
-module.exports = { SETTINGS_PATH, defaultSettings, loadSettings, saveSettings };
+// Window geometry lives in the same file under its own key rather than a second
+// file. settingsToServerConfig() picks named keys, so this never reaches the
+// server, and saveSettings() from the renderer round-trips the whole object it
+// was handed by get-settings -- which is why the bounds writer below re-reads
+// and merges instead of writing a bare object.
+function loadWindowBounds() {
+  const { window } = loadSettings();
+  return window && typeof window === 'object' ? window : null;
+}
+
+function saveWindowBounds(bounds) {
+  const settings = loadSettings();
+  settings.window = bounds;
+  saveSettings(settings);
+}
+
+module.exports = {
+  SETTINGS_PATH,
+  defaultSettings,
+  loadSettings,
+  saveSettings,
+  loadWindowBounds,
+  saveWindowBounds,
+};

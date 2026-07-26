@@ -18,16 +18,30 @@ function createRankTracker({ riot, state, placements, getConfig, isMockMode, emi
   let consecutiveFailures = 0;
   let pollTimer = null;
 
+  // Bumped by resetIdentity(). A poll is two awaited round-trips to Riot, and
+  // saving a new Riot ID mid-flight used to let the old identity's response --
+  // typically a 404 for the name you just replaced -- land *after* the reset and
+  // overwrite the fresh state with a stale error. It corrected itself on the
+  // next tick, but on a card that is on screen the whole time. Each poll
+  // captures the epoch it started in and drops its result if it no longer
+  // matches.
+  let identityEpoch = 0;
+
   async function poll() {
     // Mock mode owns the state while it's on; a live poll landing underneath it
     // would overwrite the simulated values mid-preview.
     if (isMockMode()) return;
 
+    const epoch = identityEpoch;
     const config = getConfig();
     if (!config.riotApiKey || !config.gameName || !config.tagLine) {
+      // Name the missing half rather than both. This lands on the overlay's
+      // footer band as well as the app's banner, and "Riot ID not set" tells
+      // you which field to go and fill in; the old combined sentence named a
+      // "Settings" page that no longer exists and truncated on the card.
       state.data = {
         ...state.data,
-        error: 'Not configured — set your Riot ID and API key in Settings',
+        error: config.riotApiKey ? 'Riot ID not set' : 'Riot API key not set',
         updatedAt: new Date().toISOString(),
       };
       emit();
@@ -37,6 +51,8 @@ function createRankTracker({ riot, state, placements, getConfig, isMockMode, emi
     try {
       const puuid = await riot.getPuuid();
       const entries = await riot.getLeagueEntries(puuid);
+      // Re-check after the round-trips, before anything is written.
+      if (epoch !== identityEpoch || isMockMode()) return;
       // Ranked-only, deliberately. A player who's only played Hyper Roll or
       // Double Up this set still HAS league entries -- RANKED_TFT_TURBO /
       // RANKED_TFT_DOUBLE_UP -- but those carry ratedTier/ratedRating instead
@@ -54,6 +70,7 @@ function createRankTracker({ riot, state, placements, getConfig, isMockMode, emi
       }
       consecutiveFailures = 0;
     } catch (err) {
+      if (epoch !== identityEpoch || isMockMode()) return;
       consecutiveFailures++;
       if (consecutiveFailures <= 3 || consecutiveFailures % 12 === 0) {
         log('ERROR', `Fetch failed (${consecutiveFailures} in a row): ${err.message}`);
@@ -141,6 +158,7 @@ function createRankTracker({ riot, state, placements, getConfig, isMockMode, emi
 
   /** A different Riot ID / region is being tracked now. */
   function resetIdentity() {
+    identityEpoch++;
     riot.clearIdentity();
     state.resetIdentity();
     placements.reset();

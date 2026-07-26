@@ -89,7 +89,7 @@
     });
   }
 
-  /** Kept for the Test tab, which drives a takeover directly. */
+  /** Kept for the Practice page, which drives a takeover directly. */
   function showRankMoment(isUp, tier, rank) {
     clearMoment();
     showTierMoment(isUp, tier, rank);

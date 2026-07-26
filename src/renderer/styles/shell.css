@@ -1,83 +1,106 @@
-/* Window chrome: the top bar with its status pill, the tab strip, the scrolling
-   content area, and the card each panel is built from. */
+/* The window's two-column frame, the scrolling content column, and the card
+   every panel is built from. */
 
-.topbar {
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  height: 100vh;
+}
+
+/* Only the content column scrolls, so the sidebar (and the status readout in
+   it) stays put no matter how long a page gets. */
+.content {
+  overflow-y: auto;
+  padding: var(--s6);
+}
+
+/* Capped so a wide window produces a readable column instead of 900px-wide
+   text inputs. */
+.content-inner {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.page { display: none; }
+.page.active { display: block; }
+
+.page-head { margin-bottom: var(--s5); }
+.page-title {
+  margin: 0;
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+.page-sub {
+  margin: 5px 0 0;
+  font-size: var(--fs-md);
+  color: var(--muted);
+}
+
+.card {
+  background: linear-gradient(180deg, #181e2a, #141924);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--s4);
+  margin-bottom: var(--s3);
+}
+
+.card-title {
+  margin: 0 0 var(--s3);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--muted);
+}
+
+/* A card whose title sits opposite a control (the practice-mode switch). */
+.card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
+  gap: var(--s4);
 }
-.brand {
+.card-head .card-title { margin: 0; }
+
+.row-between {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: 14px;
+  justify-content: space-between;
+  gap: var(--s4);
 }
-.brand img { border-radius: 4px; }
 
-.status-pill {
+/* Standing notice at the top of a page -- practice mode, and errors. */
+.banner {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--text-dim);
-  background: var(--panel-alt);
-  padding: 4px 10px;
-  border-radius: 12px;
+  gap: var(--s3);
+  border-radius: var(--r-lg);
+  padding: var(--s3) var(--s4);
+  margin-bottom: var(--s3);
 }
-.dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-dim);
-  flex-shrink: 0;
+.banner-text {
+  flex: 1;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
 }
-.dot.ok { background: var(--green); animation: pulse 2s ease-in-out infinite; }
-.dot.error { background: var(--red); }
-.dot.warn { background: #ffaa00; }
+.banner-text b { font-weight: 700; }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+.banner.warn {
+  background: linear-gradient(180deg, rgba(255,180,84,0.14), rgba(255,180,84,0.07));
+  border: 1px solid rgba(255,180,84,0.32);
+  color: #f2dcb8;
 }
+.banner.warn b { color: #ffd79a; }
 
-.tabs {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-  padding: 0 8px;
+.banner.error {
+  background: linear-gradient(180deg, rgba(255,95,95,0.13), rgba(255,95,95,0.06));
+  border: 1px solid rgba(255,95,95,0.30);
+  color: #f3cccc;
+  align-items: flex-start;
 }
-.tab-btn {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  padding: 10px 14px;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-}
-.tab-btn.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
+.banner.error b { color: #ffb3b3; }
+.banner.error .banner-text { word-break: break-word; }
 
-main {
-  padding: 14px 16px 24px;
-  overflow-y: auto;
-  /* 90px = topbar + tab strip. Keeps the scroll inside <main> so the window
-     chrome stays put. */
-  height: calc(100vh - 90px);
-}
-
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
-
-.card {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px;
-  margin-bottom: 12px;
-}
+.banner .dot { margin-top: 1px; }

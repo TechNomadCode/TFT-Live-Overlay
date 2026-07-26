@@ -1,31 +1,28 @@
-/* Deliberately minimal: no blurs, no box-shadow animations, no continuous
-   transforms. The only animated property anywhere is a cheap opacity pulse
-   on the status dot. This is a settings GUI, not the stream overlay --
-   keeping it flat keeps CPU/GPU usage negligible even while open. */
+/* Reset and document defaults. Tokens live in tokens.css, loaded first.
+ *
+ * The one continuously-animating thing in this window is the overlay preview
+ * iframe on the Overlay page, which is the real card and costs what the real
+ * card costs. Everything else here is static: transitions on hover, and the
+ * status dot's opacity pulse. backgroundThrottling on the BrowserWindow makes
+ * all of it free once the window is hidden, which is most of a stream. */
 
 * { box-sizing: border-box; }
-
-:root {
-  --bg: #121721;
-  --panel: #1a2130;
-  --panel-alt: #1d2433;
-  --border: rgba(255,255,255,0.08);
-  --text: #e8ecf3;
-  --text-dim: #8a96a8;
-  --accent: #7ee0ff;
-  --accent-dim: #4fa8c4;
-  --green: #00ff88;
-  --red: #ff4d4d;
-  /* See src/overlay/styles/tokens.css: optical nudge for placement digits. */
-  --pl-nudge: 0px;
-}
 
 html, body {
   margin: 0;
   padding: 0;
+  height: 100%;
   background: var(--bg);
   color: var(--text);
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
-  font-size: 13px;
+  font-size: var(--fs-md);
   user-select: none;
+}
+
+/* Anything the user might want to copy out has to opt back in. */
+.selectable { user-select: text; }
+
+:focus-visible {
+  outline: 2px solid var(--cyan-deep);
+  outline-offset: 2px;
 }

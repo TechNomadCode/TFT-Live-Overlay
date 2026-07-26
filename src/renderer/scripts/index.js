@@ -1,11 +1,12 @@
-// Settings window entry point. Each panel module exposes a single init, and
-// this is the only place that decides they run.
+// App window entry point. Each panel module exposes a single init, and this is
+// the only place that decides they run.
 
 (function (ns) {
   'use strict';
 
-  ns.initTabs();
+  ns.initNav();
   ns.initOverlayLink();
+  ns.initPreview();
   ns.initDiagnostics();
   ns.initSettingsForm();
   ns.initTestPanel();

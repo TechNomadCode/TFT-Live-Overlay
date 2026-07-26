@@ -48,9 +48,11 @@ third-party service in the path adding its own rate limits.
  · [macOS · Intel](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-x64.dmg)
  · [Linux](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-linux-x86_64.AppImage)
 
-Double-click and it installs — no Node, no clone, no build step. Settings live
-in your OS app-data folder, so installing a new version over the top keeps your
-Riot ID, region and API key.
+No Node, no clone, no build step. On Windows the installer asks where you want
+it and whether to install for everyone or just you. Settings live in your OS
+app-data folder rather than next to the app, so installing a new version over
+the top keeps your Riot ID, region and API key — and uninstalling leaves them
+alone.
 
 <details>
 <summary>Your OS says the app is unrecognised or can't be opened</summary>
@@ -94,23 +96,27 @@ npm install
 ```
 Run `npm install-scripts ls` first if you're not sure which package needs it.
 
-A window opens with three tabs: **Dashboard**, **Settings**, **Test**.
-The app also adds a tray icon — closing the window just hides it; the
-overlay server keeps running so Streamlabs/OBS never loses connection.
-Quit fully from the tray icon's "Quit" option.
+A window opens with four pages in the sidebar: **Overlay**, **Account**,
+**Practice** and **Help**. The app also adds a tray icon — closing the window
+just hides it; the overlay server keeps running so Streamlabs/OBS never loses
+connection. Quit fully from the sidebar's **Quit** button or the tray icon.
 
 ## First-time setup
 
-1. Open **Settings**
+1. Open **Account**
 2. Enter your Riot ID (name + tag, no `#`) and pick your region
 3. Paste a Riot API key from [developer.riotgames.com](https://developer.riotgames.com/) — personal keys expire every 24h, just paste a fresh one in here when that happens, no restart needed
-4. Click **Save Settings** — takes effect immediately
+4. Click **Save changes** — takes effect immediately
 
 ## Adding it to Streamlabs / OBS
 
-Go to **Dashboard** → click **Copy URL** → add a **Browser Source** in
+Go to **Overlay** → click **Copy URL** → add a **Browser Source** in
 Streamlabs pointing to that URL (`http://localhost:3000/overlay.html`
 by default).
+
+The **Overlay** page also shows a live preview of the card. It's the real
+overlay in an iframe, not an approximation — what you see there is what OBS
+draws.
 
 The card itself is 370×108. Set the Browser Source slightly larger than
 that (say 400×130) — the page background is transparent, so surplus
@@ -128,7 +134,7 @@ source area is invisible, while a source *smaller* than the card clips it.
 > machine's "reduce motion" accessibility setting.
 >
 > If it still doesn't move, open the overlay, wait five seconds, then use
-> **Dashboard → Troubleshooting → Copy Diagnostics**. The overlay measures
+> **Help → Send a report → Copy report for support**. The overlay measures
 > itself inside whichever browser drew it and writes a plain-language
 > verdict; paste that into an issue.
 

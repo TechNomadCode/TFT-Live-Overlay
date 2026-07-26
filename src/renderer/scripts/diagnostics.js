@@ -1,4 +1,4 @@
-// The Dashboard's Troubleshooting card.
+// The Help page's "Send a report" card.
 //
 // Both buttons exist for the same reason: the overlay renders in a browser we
 // don't control and can't inspect, so the only way to find out why a card looked
@@ -13,7 +13,7 @@
   const CONFIRM_LABEL_MS = 1400;
 
   // Same pattern as the Copy URL button: the label is the whole confirmation,
-  // because a toast in a window this small covers the thing you just clicked.
+  // shown where the user is already looking instead of somewhere else on screen.
   function flash(button, message) {
     const original = button.dataset.label || button.textContent;
     button.dataset.label = original;

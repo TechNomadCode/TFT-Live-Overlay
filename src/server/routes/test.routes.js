@@ -1,4 +1,4 @@
-// POST /api/test/* — the Test tab's driver. There is no automated test suite;
+// POST /api/test/* — the Practice page's driver. There is no automated test suite;
 // this is how every overlay code path gets exercised without waiting on a real
 // match or spending API quota.
 

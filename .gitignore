@@ -1,8 +1,12 @@
 # Dependencies
 node_modules/
 
-# Build & packaging outputs
+# Build & packaging outputs. dist-*/ covers the one-off output dirs you end up
+# using when a running copy of the app has dist/ locked -- electron-builder
+# -c.directories.output=dist-whatever. Windows keeps a handle on win-unpacked
+# while the packaged app is running, so this happens more than you'd expect.
 dist/
+dist-*/
 out/
 build/
 

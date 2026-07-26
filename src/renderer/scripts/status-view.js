@@ -1,24 +1,22 @@
-// Renders a status payload into the top pill, the error card and the live
-// preview mini-card.
+// Renders a status payload into the sidebar readout, the practice-mode and
+// error banners, and the practice toggle.
 //
-// No polling here -- status arrives via a push from the main process
+// The overlay preview is deliberately not fed from here -- it's an iframe of the
+// real overlay, which polls the server itself. See scripts/preview.js.
+//
+// No polling here either: status arrives via a push from the main process
 // (onStatusUpdate) whenever it actually changes, so this window burns zero CPU
 // sitting idle between updates.
 
 (function (ns, Tiers) {
   'use strict';
 
-  // Mirrors the overlay's strip so Settings changes stay easy to sanity-check.
-  const PLACEMENT_SLOTS = 5;
-
-  let lastCrestSlug = null;
-
-  function renderStatusPill(status) {
+  function renderStatusHead(status) {
     const dot = document.getElementById('statusDot');
     const text = document.getElementById('statusText');
     if (status.isMockMode) {
       dot.className = 'dot warn';
-      text.textContent = 'Mock mode';
+      text.textContent = 'Practice mode';
     } else if (status.error) {
       dot.className = 'dot error';
       text.textContent = 'Error';
@@ -27,84 +25,69 @@
       text.textContent = 'Live';
     } else {
       dot.className = 'dot';
-      text.textContent = 'Stopped';
+      text.textContent = 'Not tracking';
     }
   }
 
-  function renderErrorCard(status) {
-    const card = document.getElementById('errorCard');
-    if (status.error) {
-      card.style.display = 'block';
-      document.getElementById('errorText').textContent = status.error;
-    } else {
-      card.style.display = 'none';
+  function renderRank(status) {
+    const el = document.getElementById('statusRank');
+    if (!status.tier || status.tier === 'UNRANKED') {
+      // Distinguish "we have no key/ID yet" from "this account is genuinely
+      // unranked" -- they need completely different things from the user.
+      el.textContent = status.hasApiKey && status.gameName ? 'Unranked' : 'Not set up yet';
+      return;
     }
-  }
-
-  function renderPlacements(list) {
-    const row = document.getElementById('miniPlacements');
-    if (!row) return;
-    let html = '';
-    for (let i = 0; i < PLACEMENT_SLOTS; i++) {
-      const p = list[i];
-      if (typeof p === 'number') {
-        const cls = p === 1 ? 'first' : p <= 4 ? 'top4' : 'bot4';
-        html += `<span class="pl ${cls}">${p}</span>`;
-      } else {
-        html += '<span class="pl empty">-</span>';
-      }
-    }
-    if (row.innerHTML !== html) row.innerHTML = html;
+    const name = status.tier.charAt(0) + status.tier.slice(1).toLowerCase();
+    // Riot still reports a division for Master and above; the ladder has none
+    // there, and the card doesn't draw one. Say the same thing the card says.
+    const division = status.rank && !Tiers.isApexTier(status.tier) ? ` ${status.rank}` : '';
+    el.innerHTML = '';
+    el.append(`${name}${division} `);
+    const lp = document.createElement('span');
+    lp.className = 'lp';
+    lp.textContent = `${status.leaguePoints || 0} LP`;
+    el.append(lp);
   }
 
   function renderSession(status) {
+    const el = document.getElementById('statusSession');
     const lp = status.sessionLP || 0;
     const avg = status.sessionAvgPlacement;
-    const el = document.getElementById('miniSession');
-    el.textContent = `Session: ${lp >= 0 ? '+' : ''}${lp} LP` +
-      (typeof avg === 'number' ? ` (avg ${avg.toFixed(1)})` : '');
-    el.className = 'mini-session' + (lp > 0 ? ' positive' : lp < 0 ? ' negative' : '');
-  }
+    const games = (status.sessionWins || 0) + (status.sessionLosses || 0);
 
-  // Compare the slug rather than img.src: src reads back as a resolved absolute
-  // URL, so comparing it against what we're about to build never matches and
-  // re-requests the image on every status push.
-  async function renderCrest(tier) {
-    const slug = Tiers.slugFor(tier);
-    const img = document.getElementById('miniEmblem');
-    if (!slug) {
-      img.style.visibility = 'hidden';
+    if (!games) {
+      el.textContent = 'No games yet this session';
       return;
     }
-    if (slug !== lastCrestSlug) {
-      lastCrestSlug = slug;
-      img.src = await ns.crestUrl(slug);
-    }
-    img.style.visibility = 'visible';
+
+    el.innerHTML = '';
+    const delta = document.createElement('span');
+    delta.className = lp > 0 ? 'gain' : lp < 0 ? 'loss' : '';
+    delta.textContent = `${lp > 0 ? '+' : ''}${lp} LP`;
+    el.append(delta, ` this session${typeof avg === 'number' ? ` · avg ${avg.toFixed(1)}` : ''}`);
   }
 
-  function renderPreview(status) {
-    document.getElementById('miniName').textContent = status.gameName || '—';
-    document.getElementById('miniTag').textContent = status.tagLine ? ' #' + status.tagLine : '';
+  function renderBanners(status) {
+    const practice = document.getElementById('practiceBanner');
+    practice.style.display = status.isMockMode ? '' : 'none';
+    // Also flag the nav item, so practice mode is visible from every page --
+    // the failure it prevents is going live with fake LP on screen.
+    document.getElementById('navPractice').classList.toggle('flagged', !!status.isMockMode);
 
-    const region = document.getElementById('miniRegion');
-    region.textContent = status.region || '';
-    region.style.display = status.region ? '' : 'none';
-
-    document.getElementById('miniTier').textContent =
-      status.tier === 'UNRANKED' || !status.tier ? 'Unranked' : `${status.tier} ${status.rank || ''}`;
-    document.getElementById('miniLp').textContent =
-      status.tier && status.tier !== 'UNRANKED' ? `${status.leaguePoints || 0} LP` : '';
-
-    renderPlacements(status.recentPlacements || []);
-    renderSession(status);
-    renderCrest(status.tier);
+    const error = document.getElementById('errorBanner');
+    if (status.error) {
+      error.style.display = '';
+      document.getElementById('errorText').textContent = status.error;
+    } else {
+      error.style.display = 'none';
+    }
   }
 
   function applyStatus(status) {
-    renderStatusPill(status);
-    renderErrorCard(status);
-    renderPreview(status);
+    renderStatusHead(status);
+    renderRank(status);
+    renderSession(status);
+    renderBanners(status);
     document.getElementById('mockToggle').checked = !!status.isMockMode;
   }
 
