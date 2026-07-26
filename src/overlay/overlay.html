@@ -8,46 +8,62 @@
      the filename must not change. -->
 <link rel="stylesheet" href="styles/tokens.css" />
 <link rel="stylesheet" href="styles/card.css" />
+<link rel="stylesheet" href="styles/materials.css" />
 <link rel="stylesheet" href="styles/readout.css" />
 <link rel="stylesheet" href="styles/moment.css" />
 </head>
 <body>
 
+<!-- Layer order matters and is deliberate: frame (0) → core (1) → motes and the
+     per-tier ornaments (2) → readout (3) → flare (8) / moment (7) → sheen (5).
+     The ornament layers are always present and CSS shows only the ones the
+     current tier claims, so a rank change never has to touch the DOM. -->
 <div class="card" id="card">
-  <div class="sheen"><i></i></div>
+  <div class="frame"></div>
+  <div class="core"></div>
+  <div class="motes" id="motes"></div>
 
-  <div class="content-group">
-    <div class="emblem"><img id="emblem" src="" alt="rank crest" /></div>
-    <div class="info">
-      <div class="rank-row">
-        <span class="tier" id="tierRank">—</span>
-        <span class="lp"><span id="lpVal">0</span><span class="unit">LP</span></span>
-        <span class="lp-trend" id="lpTrend"></span>
-      </div>
-      <div class="goal-row hidden" id="goalRow">
-        <div class="goal-bar"><div class="goal-fill" id="goalFill"></div></div>
-        <span class="goal-label" id="goalLabel"></span>
-      </div>
-      <div class="placements-row" id="placements"></div>
-      <div class="session-row" id="sessionRow">
-        <span class="tag">SESSION</span>
-        <span class="amount" id="sessionLP">+0 LP</span>
-        <span class="sep">·</span>
-        <span class="stat" id="sessionRecord">0W-0L</span>
+  <!-- Grandmaster only: a hard, fast edge of light, distinct from the sheen. -->
+  <div class="blade"><i></i></div>
+  <!-- Challenger only: low-relief filigree that the sheen reveals. -->
+  <div class="filigree"></div>
+
+  <div class="pad">
+    <div class="content-group">
+      <div class="emblem"><img id="emblem" src="" alt="rank crest" /></div>
+      <div class="info">
+        <div class="rank-row">
+          <span class="tier" id="tierRank">—</span>
+          <span class="lp"><span id="lpVal">0</span><span class="unit">LP</span></span>
+          <span class="lp-trend" id="lpTrend"></span>
+        </div>
+        <div class="goal-row" id="goalRow">
+          <div class="goal-bar"><div class="goal-fill" id="goalFill"></div></div>
+          <span class="goal-label" id="goalLabel"></span>
+        </div>
+        <div class="placements-row" id="placements"></div>
+
+        <!-- Shown only in the not-tracking state, in place of the rows above:
+             a zeroed-out live layout reads as a real (and dreadful) session
+             rather than as "no data yet". -->
+        <div class="wait-line"><span class="pulse"></span>Waiting for Riot API</div>
+        <div class="wait-line dim" id="waitReason"></div>
       </div>
     </div>
+
+    <div class="footer" id="footer">
+      <span id="gameName">—</span><span class="tagline" id="tagLine"></span>
+      <span class="region" id="region"></span>
+    </div>
+    <div class="error" id="errorMsg"></div>
   </div>
 
-  <div class="footer" id="footer">
-    <span id="gameName">—</span><span class="tagline" id="tagLine"></span>
-    <span class="region" id="region"></span>
-  </div>
-  <div class="error" id="errorMsg"></div>
-
+  <div class="flare"></div>
   <div class="moment" id="moment">
     <span class="verb">Promoted</span>
     <span class="dest">—</span>
   </div>
+  <div class="sheen"><i></i></div>
 </div>
 
 <!-- Classic scripts, not modules: the same script files have to run in the
@@ -56,6 +72,7 @@
 <script src="/shared/tiers.js"></script>
 <script src="scripts/dom.js"></script>
 <script src="scripts/palette.js"></script>
+<script src="scripts/particles.js"></script>
 <script src="scripts/lp-meter.js"></script>
 <script src="scripts/rank-moment.js"></script>
 <script src="scripts/crest.js"></script>

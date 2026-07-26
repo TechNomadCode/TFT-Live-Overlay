@@ -10,11 +10,11 @@ straight from the Riot API.**
 [![Platform](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-lightgrey)](#building-a-distributable-installer)
 [![OBS / Streamlabs](https://img.shields.io/badge/OBS%20%C2%B7%20Streamlabs-Browser%20Source-302E31)](#adding-it-to-streamlabs--obs)
 
-<img src="docs/overlay-sheen.gif" alt="The TFT Live Overlay card, with the sheen band sweeping across it" width="370">
+<img src="docs/overlay-grandmaster-sheen.webp" alt="The TFT Live Overlay card at Grandmaster, with the blade sweep crossing its crimson steel frame" width="370">
 
-<sub>The overlay card as it renders on stream. **The sheen loop is tightened here** —
-the real animation sweeps once every 9s and sits transparent in between, so this
-preview keeps the ~1s sweep and collapses the idle stretch into a single held frame.</sub>
+<sub>The overlay card as it renders on stream, here at Grandmaster. The blade
+sweep runs every 7s; the sheen and the drifting shards run on their own cycles,
+so the loop seam is where they don't quite line back up.</sub>
 
 </div>
 
@@ -34,21 +34,6 @@ third-party service in the path adding its own rate limits.
 | **Placement strip** | Your last 5 finishes, newest first — tonal, so it never competes with the LP readout. |
 | **Session line** | LP gained or lost this session, W-L record, and average placement. |
 | **Tier colours** | The accent ramp, crest bloom and promotion banner all repaint to the tier you're actually in. |
-
-## Every tier, and the moments that matter
-
-<div align="center">
-
-<img src="docs/overlay-iron.png" alt="Iron" width="340"> <img src="docs/overlay-silver.png" alt="Silver" width="340">
-
-<img src="docs/overlay-diamond.png" alt="Diamond" width="340"> <img src="docs/overlay-grandmaster.png" alt="Grandmaster" width="340">
-
-<img src="docs/overlay-promotion.png" alt="Promotion banner" width="340"> <img src="docs/overlay-demotion.png" alt="Demotion banner" width="340">
-
-<sub>A tier change takes the card over for ~2.6s in the colour of the tier you landed in —
-the single most clippable moment on a ranked stream.</sub>
-
-</div>
 
 ## Running it
 

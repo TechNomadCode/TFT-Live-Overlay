@@ -1,32 +1,69 @@
-/* The card shell: the container itself, its two columns, the crest, the
-   ambient sheen, and the footer band shared by the Riot ID and the error. */
+/* The card shell: the metal frame, the lit core behind the crest, the particle
+   layer, the two columns, the ambient sheen, and the footer band shared by the
+   Riot ID and the error.
+
+   Everything tier-reactive reads the --tier-* custom properties (written only
+   by scripts/palette.js). The parts that can't be derived from one colour --
+   how polished the metal is, how dark the body sits, what the particles DO --
+   live per tier in materials.css. */
 
 .card {
   position: relative;
-  display: flex;
-  align-items: center;
   width: var(--card-w);
   height: var(--card-h);
-  /* Left-to-right lift: the emblem end carries slightly more weight, which
-     stops the crest from looking like it's floating on a flat slab. */
-  background: linear-gradient(115deg, #253150ee 0%, #1e2839ee 62%, #1b2433ee 100%);
-  border: 1px solid rgba(255,255,255,0.09);
-  border-radius: 10px;
-  /* Bottom padding reserves the footer band (Riot ID / error line) so it can
-     never collide with the info rows above it. Kept tight because every pixel
-     here is one the type can't have -- the card has to stay readable after a
-     1080p canvas is downscaled to a 720p output. */
-  padding: 6px 12px 13px 12px;
+  border-radius: 12px;
   color: var(--text);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.4);
-  overflow: hidden;
   isolation: isolate; /* lets the LP glow sit behind text but above the panel */
-  transition: box-shadow 0.4s ease, border-color 0.4s ease;
+  transition: box-shadow 0.4s ease;
 }
 
-/* 12 + 112 + 12 + 222 + 12 = 370. The previous layout totalled 386 against a
-   370px card, so the info column was being clipped by ~16px -- which is what
-   forced the LP badge down to an unreadable size to fit beside it. */
+/* The frame is a gradient rectangle with the body painted on top at a 3px
+   inset, which is what leaves a metal edge showing. Cheaper and sharper than
+   border-image, and it lets the body carry its own inner bevel shadows. */
+.frame {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 3px;
+  z-index: 0;
+}
+.frame::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 9px;
+}
+
+/* Tier-coloured light pooling behind the crest, echoing the lit core of the
+   emblem art. Blurred rather than a soft-stop gradient so it reads as glow
+   rather than as a visible ellipse. */
+.core {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  width: 132px;
+  height: 96px;
+  transform: translateY(-50%);
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(5px);
+}
+
+/* Bottom padding reserves the footer band (Riot ID / error line). Without it
+   the info column centres against the full card height and the placements row
+   lands on top of the footer. */
+.pad {
+  position: absolute;
+  inset: 0;
+  padding: 7px 12px 16px 12px;
+  display: flex;
+  align-items: center;
+  z-index: 3;
+}
+
+/* 12 + 112 + 12 + 222 + 12 = 370. Exact: the info column has no slack, so
+   changing the side padding here re-clips the longest rank labels. */
 .content-group {
   display: flex;
   align-items: center;
@@ -37,8 +74,7 @@
 
 /* Landscape, not square -- the crests are wider than they are tall, so a
    square box is mostly dead space. 112 wide because the server pads every
-   crest onto one canvas at equal visual weight (see normaliseCrest), and the
-   widest tiers need the room to reach that weight without being scaled down. */
+   crest onto one canvas at equal visual weight (see normaliseCrest). */
 .emblem {
   width: 112px;
   height: 80px;
@@ -70,22 +106,58 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
 }
 
-/* Continuous sheen. Measured at +0.15% CPU: the band is small and its
-   keyframes hold constant for ~89% of the cycle, so the compositor has
-   nothing to redraw most of the time and effectively self-throttles.
+/* ---- Particles ---------------------------------------------------------- */
+/* One generated set of elements; materials.css decides per tier what they look
+   like and how they move. Positions and timings come from CSS custom
+   properties written once by scripts/particles.js, so a tier change is a class
+   swap and never touches the DOM. Transform and opacity only, to stay on the
+   compositor. */
+.motes {
+  position: absolute;
+  inset: 3px;
+  border-radius: 9px;
+  overflow: hidden;
+  z-index: 2;
+  pointer-events: none;
+}
+.motes b {
+  position: absolute;
+  bottom: -8px;
+  left: var(--x);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  opacity: 0;
+  animation: drift var(--dur) linear var(--d) infinite;
+}
+@keyframes drift {
+  0%   { opacity: 0; transform: translate3d(0, 0, 0) scale(0.6); }
+  12%  { opacity: 0.85; }
+  70%  { opacity: 0.5; }
+  100% { opacity: 0; transform: translate3d(var(--dx), calc(-1 * var(--rise)), 0) scale(1); }
+}
+
+/* Per-tier ornaments. Both are always in the DOM; materials.css reveals the
+   one the current tier claims. */
+.blade, .filigree { display: none; }
+
+/* ---- Ambient sheen ------------------------------------------------------ */
+/* Measured at +0.15% CPU: the band is small and its keyframes hold constant
+   for ~89% of the cycle, so the compositor has nothing to redraw most of the
+   time and effectively self-throttles.
    The fade-out happens AT the end position and the jump back to the start
    happens while fully transparent -- doing both at once made the band
    visibly fly backwards for ~45ms at the end of each loop. */
 .sheen {
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
+  inset: 3px;
+  border-radius: 9px;
   overflow: hidden;
   pointer-events: none;
-  z-index: 3;
+  z-index: 5;
 }
 .sheen i {
   position: absolute;
@@ -112,9 +184,9 @@
 /* ---- Footer band: Riot ID, or an error. Mutually exclusive, same slot. ---- */
 .footer, .error {
   position: absolute;
-  bottom: 4px;
-  right: 12px;
-  z-index: 2;
+  bottom: 5px;
+  right: 13px;
+  z-index: 4;
   max-width: 250px;
   line-height: 1;
   white-space: nowrap;
@@ -131,30 +203,102 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.4px;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.42);
+  color: rgba(255,255,255,0.72);
   user-select: none;
 }
-.footer .tagline { color: rgba(255,255,255,0.26); }
+.footer .tagline { color: rgba(255,255,255,0.5); }
 .footer .region {
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 800;
   line-height: 1;
   letter-spacing: 0.5px;
-  color: rgba(255,255,255,0.34);
-  border: 1px solid rgba(255,255,255,0.13);
+  color: rgba(255,255,255,0.68);
+  border: 1px solid rgba(255,255,255,0.26);
   border-radius: 3px;
-  padding: 2px 3px;
+  padding: 2px 4px;
 }
 .footer.hidden { display: none; }
 
 .error {
   color: #ff6b6b;
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 600;
   display: none; /* shown via .visible when an error is present */
 }
 .error.visible { display: block; }
+
+/* ---- Passive "not tracking yet" state ---------------------------------- */
+/* Only for a card that has never had data -- see isPending() in readout.js. A
+   live card that merely drops a poll keeps its rank and must not land here. */
+.card.pending .frame {
+  background: linear-gradient(145deg,
+    rgba(255,255,255,0.3) 0%, #55607a 30%, #2b3040 50%, #55607a 72%, rgba(255,255,255,0.25) 100%);
+}
+.card.pending .frame::after {
+  background: linear-gradient(160deg, #1c212b 0%, #151920 55%, #10131a 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.6);
+}
+.card.pending { box-shadow: 0 8px 22px rgba(0,0,0,0.5); }
+/* No tier is known yet, so there is nothing for the tier-reactive layers to
+   colour. */
+.card.pending .core,
+.card.pending .motes,
+.card.pending .blade,
+.card.pending .filigree { display: none; }
+.card.pending .tier { color: rgba(255,255,255,0.6); font-size: 17px; }
+/* Purpose-built, not the live layout dimmed: the LP figure, goal bar and
+   placement strip are removed rather than shown at zero, and the two status
+   lines take their place. */
+.card.pending .lp,
+.card.pending .lp-trend,
+.card.pending .goal-row,
+.card.pending .placements-row,
+.card.pending .error { display: none; }
+.card.pending .info { gap: 6px; }
+
+.wait-line { display: none; }
+.card.pending .wait-line {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: rgba(255,255,255,0.46);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card.pending .wait-line.dim { font-size: 11px; color: rgba(255,255,255,0.32); }
+.wait-line .pulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  margin-right: 7px;
+  vertical-align: middle;
+  animation: waitPulse 2s ease-in-out infinite;
+}
+@keyframes waitPulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.9; } }
+/* slugFor('UNRANKED') is null, so updateCrest leaves the emblem hidden and the
+   112x80 slot would otherwise sit empty -- the single biggest reason the
+   first-run card looked broken. */
+/* display:none, not visibility:hidden -- the img is width:100%, so merely
+   hiding it would still push the placeholder out of the slot. */
+.card.pending .emblem img { display: none; }
+.card.pending .emblem::after {
+  content: '?';
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  border: 2px dashed rgba(255,255,255,0.17);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 27px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.24);
+}

@@ -47,8 +47,27 @@ html, body {
   font-family: 'Segoe UI', Arial, sans-serif;
 }
 
-/* One place for every motion opt-out on the page. */
+/* One place for every motion opt-out on the page. The previous version covered
+   only the sheen and the LP glow, which left the promotion takeover and the
+   crest cross-fade running for users who had asked for less motion. */
 @media (prefers-reduced-motion: reduce) {
-  .sheen i, .lp::after { animation: none !important; }
-  .goal-fill, .emblem img { transition: none !important; }
+  .sheen i,
+  .lp::after,
+  .motes b,
+  .blade i,
+  .card.flash .flare,
+  .card.div-up,
+  .card.div-down,
+  .tier.pop,
+  .tier.dip,
+  .wait-line .pulse { animation: none !important; }
+  .wait-line .pulse { opacity: 0.7 !important; }
+  /* The particles are the motion -- with the animation off they would
+     otherwise sit frozen at their start position as visible dots. */
+  .motes b { opacity: 0 !important; }
+  .goal-fill, .emblem img, .lp-trend,
+  .moment, .moment .verb, .moment .dest, .pad { transition: none !important; }
+  /* Without the transition the recede would otherwise leave the readout
+     parked at 0.94 and blurred for the whole takeover. */
+  .card.moment-in .pad { transform: none !important; filter: none !important; }
 }

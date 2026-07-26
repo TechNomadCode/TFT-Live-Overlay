@@ -32,8 +32,9 @@ ehthumbs.db
 .claude/settings.local.json
 docs/TODO.txt
 
-# Docs GIF pipeline: the capture/encode scripts and their notes ARE committed,
-# the intermediate frames they emit are not -- ~2.7MB of regenerable PNGs whose
-# only meaningful output, docs/overlay-sheen.gif, is committed instead.
+# Docs capture pipeline: the capture/encode scripts and their notes ARE
+# committed, the intermediate frames they emit are not -- ~15MB of regenerable
+# PNGs whose only meaningful output, docs/overlay-grandmaster-sheen.webp, is
+# committed instead.
 docs/_gif-build/frame-*.png
 docs/_gif-build/frames.json

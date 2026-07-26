@@ -1,51 +1,143 @@
-/* Promotion / demotion takeover.
+/* Rank-change moments.
+ *
+ * A division change and a tier change are not the same event and must not get
+ * the same treatment. A division moves several times a session, so blocking
+ * the readout for 2.6s every time would be intolerable -- it gets a ~1s accent
+ * that leaves every number legible. A tier change is rare and is the single
+ * most clippable moment on a ranked stream, so it keeps the full takeover.
+ *
+ * Demotions are never the promotion in red: a promotion blooms white and the
+ * particles surge upward, a demotion snuffs out dark and the particles fall.
+ */
 
-   Previously a tier change was rendered by the <img> src silently swapping.
-   The single most clippable moment on a ranked stream had no treatment at
-   all. This holds the card for ~2.6s and then settles back to the readout. */
+/* ---- Tier change: full takeover ----------------------------------------
+   The readout and the banner are one movement, not two layers swapping. The
+   card's own contents recede first -- shrinking, softening and fading -- and
+   the banner grows out of the same centre point they left, then hands back the
+   same way. Fading a panel in on top instead made the takeover read as a
+   separate window appearing over the card. */
+.pad {
+  transition: opacity 0.34s ease,
+              transform 0.34s cubic-bezier(0.4, 0, 0.2, 1),
+              filter 0.34s ease;
+}
+/* Promotion: the readout draws back into the card. */
+.card.moment-in .pad {
+  opacity: 0;
+  transform: scale(0.94);
+  filter: blur(2px);
+}
+/* Demotion sinks instead of retreating -- same idea, heavier. */
+.card.moment-in.fall .pad {
+  transform: scale(0.975) translateY(4px);
+}
 
 .moment {
   position: absolute;
-  inset: 0;
-  z-index: 6;
+  inset: 3px;
+  z-index: 7;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
-  border-radius: inherit;
+  gap: 2px;
+  border-radius: 9px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.4s ease;
+  transform: scale(0.92);
+  transition: opacity 0.34s ease,
+              transform 0.42s cubic-bezier(0.2, 0.9, 0.25, 1);
   /* The banner takes the colour of the tier you landed in, not a generic
      green/red -- promoting into Gold should look like Gold. Direction is
      carried by the verb instead, which is why it stays green/red. */
   background: linear-gradient(135deg, var(--tier-deep), var(--tier-mid) 55%, var(--tier-deep));
 }
-.moment.show { opacity: 1; }
+.moment.show { opacity: 1; transform: scale(1); }
 
+/* Staggered so the banner assembles rather than arriving whole. */
 .moment .verb {
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 4px;
   text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
 }
 .moment .dest {
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 900;
   letter-spacing: 0.5px;
   color: #fff;
   text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.34s ease 0.16s,
+              transform 0.34s cubic-bezier(0.2, 0.9, 0.25, 1) 0.16s;
 }
-
+.moment.show .verb,
+.moment.show .dest { opacity: 1; transform: translateY(0); }
 .moment.up .verb   { color: var(--gain); }
 .moment.down .verb { color: var(--loss); }
 /* A demotion is knocked back a little, so dropping into a tier never looks as
    bright as climbing into it. */
 .moment.down { filter: saturate(0.7) brightness(0.82); }
 
-.card.promoted,
-.card.demoted {
-  box-shadow: 0 0 0 2px var(--tier-ring), 0 4px 22px var(--tier-glow);
-  border-color: var(--tier-ring);
+/* The flare masks the swap: frame material, body tint, crest and the apex
+   layout change all happen underneath the bloom, the same trick crest.js
+   already uses for its mid-fade crest swap. Without it a Gold frame snaps to
+   a Platinum one in a single frame. */
+.flare {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse at center,
+    rgba(255,255,255,0.95), rgba(255,255,255,0.25) 42%, transparent 72%);
+}
+.card.flash .flare { animation: flareOut 720ms ease-out; }
+@keyframes flareOut {
+  0%   { opacity: 0; transform: scale(0.55); }
+  16%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+/* A demotion snuffs out rather than blooming -- the light goes out of the card. */
+.card.flash.dark .flare {
+  background: radial-gradient(ellipse at center,
+    rgba(8,8,12,0.92), rgba(8,8,12,0.45) 45%, transparent 72%);
+  animation: flareOut 900ms ease-in;
+}
+
+/* Particles surge upward on a promotion and fall on a demotion. Reversing the
+   existing animation is enough -- no second particle system to maintain. */
+.card.surge .motes b { animation-duration: 1.4s !important; }
+.card.fall  .motes b { animation-direction: reverse !important; animation-duration: 2.2s !important; }
+
+/* ---- Division change: light accent, readout stays legible --------------- */
+.card.div-up { animation: ringUp 1000ms ease-out; }
+@keyframes ringUp {
+  0%   { box-shadow: 0 8px 22px rgba(0,0,0,0.55), 0 0 0 0 var(--tier-ring); }
+  22%  { box-shadow: 0 8px 22px rgba(0,0,0,0.55), 0 0 0 4px var(--tier-ring), 0 0 34px var(--tier-bright); }
+  100% { box-shadow: 0 8px 22px rgba(0,0,0,0.55), 0 0 0 0 rgba(0,0,0,0), 0 0 22px var(--tier-glow); }
+}
+.card.div-down { animation: ringDown 1000ms ease-out; }
+@keyframes ringDown {
+  0%   { box-shadow: 0 8px 22px rgba(0,0,0,0.55), 0 0 0 0 rgba(255,77,77,0.6); filter: none; }
+  22%  { box-shadow: 0 8px 22px rgba(0,0,0,0.55), 0 0 0 3px rgba(255,77,77,0.5); filter: saturate(0.75) brightness(0.9); }
+  100% { box-shadow: 0 8px 22px rgba(0,0,0,0.55), 0 0 0 0 rgba(0,0,0,0), 0 0 22px var(--tier-glow); filter: none; }
+}
+
+.tier.pop { animation: tierPop 820ms cubic-bezier(0.2, 0.9, 0.2, 1); }
+@keyframes tierPop {
+  0%   { transform: scale(1); }
+  26%  { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+.tier.dip { animation: tierDip 820ms ease-out; }
+@keyframes tierDip {
+  0%   { transform: scale(1); }
+  26%  { transform: scale(0.9); opacity: 0.55; }
+  100% { transform: scale(1); opacity: 1; }
 }

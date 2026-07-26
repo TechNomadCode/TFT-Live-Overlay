@@ -1,0 +1,245 @@
+/* Per-tier materials.
+ *
+ * palette.js derives --tier-bright/dim/mid/deep/ring/glow from one colour, and
+ * everything that can key off a single hue already does. This file holds what
+ * a hue cannot express: how polished the metal is, how dark the body sits, and
+ * what the particles actually DO. That is what makes the ladder read as a
+ * progression of materials rather than a hue rotation -- Iron is deliberately
+ * inert, Silver deliberately mirror-bright.
+ *
+ * Selector is `.t-<slug>`, written onto the card by palette.js alongside the
+ * custom properties. TIER_COLORS in shared/tiers.js is NOT touched by any of
+ * this -- rankScore and the crest tinting still read the real tier colour.
+ *
+ * The eight derived tiers are listed out by name below rather than matched
+ * with `[class*='t-']`. That attribute selector scored higher than the plain
+ * `.t-grandmaster` / `.t-challenger` class, so the generic recipe silently won
+ * over both hand-authored tiers: Grandmaster rendered the generic frame, and
+ * its shards were painted with `var(--p)`, which those tiers never define --
+ * so they had the right size and animation and no fill at all. An explicit
+ * list cannot collide, and does not depend on rule order to stay correct.
+ *
+ * No color-mix() or :is() anywhere in here on purpose: OBS ships its own CEF
+ * build and it is routinely years behind desktop Chrome. Everything below is
+ * plain gradients, custom properties and rgba.
+ */
+
+/* ---- Generic frame recipe, for the eight derived tiers ------------------ */
+.t-iron, .t-bronze, .t-silver, .t-gold,
+.t-platinum, .t-emerald, .t-diamond, .t-master {
+  box-shadow: 0 8px 22px rgba(0,0,0,0.55), 0 0 22px var(--tier-glow);
+}
+.t-iron .frame, .t-bronze .frame, .t-silver .frame, .t-gold .frame,
+.t-platinum .frame, .t-emerald .frame, .t-diamond .frame, .t-master .frame {
+  background: linear-gradient(145deg,
+    var(--spec) 0%, var(--tier-bright) 11%, var(--tier-dim) 27%,
+    var(--trough) 46%, var(--tier-dim) 63%, var(--tier-bright) 85%, var(--spec) 100%);
+}
+.t-iron .frame::after, .t-bronze .frame::after, .t-silver .frame::after, .t-gold .frame::after,
+.t-platinum .frame::after, .t-emerald .frame::after, .t-diamond .frame::after, .t-master .frame::after {
+  background: linear-gradient(160deg, var(--body-a) 0%, var(--body-b) 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.6),
+              inset 0 0 26px var(--bloom-c);
+}
+.t-iron .core, .t-bronze .core, .t-silver .core, .t-gold .core,
+.t-platinum .core, .t-emerald .core, .t-diamond .core, .t-master .core {
+  background: radial-gradient(ellipse at center, var(--tier-glow), transparent 68%);
+}
+.t-iron .motes b, .t-bronze .motes b, .t-silver .motes b, .t-gold .motes b,
+.t-platinum .motes b, .t-emerald .motes b, .t-diamond .motes b, .t-master .motes b {
+  background: var(--p);
+  box-shadow: 0 0 6px var(--pg);
+}
+
+/* ---- Division tiers ---------------------------------------------------- */
+
+.t-iron {
+  --spec: rgba(214,219,228,0.5); --trough: #15161a; --body-a: #1e2025; --body-b: #141519;
+  --p: #9aa0ab; --pg: rgba(150,160,175,0.45); --bloom-c: rgba(107,107,111,0.10);
+}
+.t-bronze {
+  --spec: rgba(255,228,196,0.82); --trough: #2a1608; --body-a: #251a12; --body-b: #18110c;
+  --p: #e8b071; --pg: rgba(224,150,80,0.55); --bloom-c: rgba(164,107,60,0.20);
+}
+.t-silver {
+  --spec: rgba(255,255,255,0.96); --trough: #1e242a; --body-a: #1f252b; --body-b: #151a1f;
+  --p: #eef5fb; --pg: rgba(220,235,245,0.6); --bloom-c: rgba(159,174,184,0.22);
+}
+.t-gold {
+  --spec: rgba(255,247,216,0.96); --trough: #2e2005; --body-a: #261e10; --body-b: #191308;
+  --p: #ffd884; --pg: rgba(255,200,90,0.6); --bloom-c: rgba(224,176,74,0.26);
+}
+.t-platinum {
+  --spec: rgba(230,255,253,0.92); --trough: #08201f; --body-a: #132524; --body-b: #0c1a19;
+  --p: #9ff0ea; --pg: rgba(120,230,220,0.6); --bloom-c: rgba(76,169,165,0.24);
+}
+.t-emerald {
+  --spec: rgba(216,255,230,0.92); --trough: #04220f; --body-a: #102518; --body-b: #0a1810;
+  --p: #78f0ad; --pg: rgba(70,220,130,0.6); --bloom-c: rgba(47,176,102,0.25);
+}
+.t-diamond {
+  --spec: rgba(236,243,255,0.96); --trough: #0d1430; --body-a: #1c2740; --body-b: #10141d;
+  --p: #a8bcff; --pg: rgba(120,150,255,0.6); --bloom-c: rgba(110,138,224,0.27);
+}
+.t-master {
+  --spec: rgba(246,224,255,0.94); --trough: #1c0a26; --body-a: #231430; --body-b: #150c1d;
+  --p: #d99cff; --pg: rgba(180,90,230,0.65); --bloom-c: rgba(169,80,214,0.30);
+}
+
+/* ---- Particle behaviours ------------------------------------------------ */
+
+/* Iron barely glows and barely moves -- it is the one tier that should feel
+   inert, and that contrast is what gives the rest of the ladder somewhere to
+   climb from. */
+.t-iron .motes b { animation-name: dustDrift; filter: blur(0.3px); }
+@keyframes dustDrift {
+  0%   { opacity: 0; transform: translate3d(0,0,0) scale(0.7); }
+  18%  { opacity: 0.42; }
+  75%  { opacity: 0.22; }
+  100% { opacity: 0; transform: translate3d(var(--dx), calc(-1 * var(--rise)), 0) scale(0.9); }
+}
+
+/* Silver twinkles in place rather than travelling -- polished metal catching
+   light, not dust floating over it. */
+.t-silver .motes b { animation-name: glint; }
+@keyframes glint {
+  0%, 100% { opacity: 0; transform: translate3d(0,0,0) scale(0.4); }
+  8%   { opacity: 1; transform: translate3d(0, calc(-0.15 * var(--rise)), 0) scale(1.25); }
+  22%  { opacity: 0.15; transform: translate3d(0, calc(-0.3 * var(--rise)), 0) scale(0.6); }
+  40%  { opacity: 0.7; transform: translate3d(calc(var(--dx) * 0.4), calc(-0.5 * var(--rise)), 0) scale(1); }
+  70%  { opacity: 0; transform: translate3d(var(--dx), calc(-0.8 * var(--rise)), 0) scale(0.5); }
+}
+
+/* Platinum and Diamond shed facets, not dots. */
+.t-platinum .motes b,
+.t-diamond .motes b { border-radius: 1px; animation-name: facet; }
+@keyframes facet {
+  0%   { opacity: 0; transform: translate3d(0,0,0) rotate(0deg) scale(0.6); }
+  14%  { opacity: 0.95; }
+  60%  { opacity: 0.6; }
+  100% { opacity: 0; transform: translate3d(var(--dx), calc(-1 * var(--rise)), 0) rotate(220deg) scale(1.1); }
+}
+
+/* Master's arcane energy is heavier and wanders more. */
+.t-master .motes b { filter: blur(1px); animation-name: wisp; }
+@keyframes wisp {
+  0%   { opacity: 0; transform: translate3d(0,0,0) scale(0.8); }
+  15%  { opacity: 0.8; }
+  50%  { opacity: 0.65; transform: translate3d(calc(var(--dx) * -0.6), calc(-0.5 * var(--rise)), 0) scale(1.5); }
+  100% { opacity: 0; transform: translate3d(var(--dx), calc(-1 * var(--rise)), 0) scale(2); }
+}
+
+/* ---- Grandmaster: bladed crimson steel ----------------------------------
+   Hand-authored, not derived -- it shares none of the generic recipe above.
+   Grandmaster and Challenger sit next to each other at the top of the ladder
+   and must not read as two versions of one effect: Grandmaster is discrete
+   projectiles over a dark body, Challenger has no flying objects at all. */
+.t-grandmaster { box-shadow: 0 8px 24px rgba(0,0,0,0.62), 0 0 26px rgba(200,40,40,0.4); }
+.t-grandmaster .frame {
+  background: linear-gradient(145deg,
+    #ffffff 0%, #ffd8d8 7%, #e05353 20%, #4a0d0d 45%, #b52626 62%, #f2a8a8 84%, #ffffff 100%);
+}
+.t-grandmaster .frame::after {
+  background: linear-gradient(160deg, #2a1015 0%, #1b0a0e 55%, #120609 100%);
+  box-shadow: inset 0 1px 0 rgba(255,220,220,0.3), inset 0 -1px 0 rgba(0,0,0,0.68),
+              inset 0 0 28px rgba(200,40,40,0.3);
+}
+.t-grandmaster .core { background: radial-gradient(ellipse at center, rgba(214,60,60,0.5), transparent 66%); }
+.t-grandmaster .goal-fill { background: linear-gradient(90deg, #7d1414, #ff6b6b); box-shadow: 0 0 9px rgba(230,60,60,0.7); }
+.t-grandmaster .pl.first { background: #f0dede; border-color: #f0dede; color: #2a0a0a; box-shadow: 0 0 10px rgba(255,120,120,0.55); }
+
+/* Shards: slivers of light on a hard diagonal, faster than any drift. */
+.t-grandmaster .motes b {
+  width: 2px;
+  height: calc(var(--s) * 5);
+  border-radius: 1px;
+  background: linear-gradient(180deg, transparent, #ffffff 38%, #ff9a9a 72%, transparent);
+  box-shadow: 0 0 7px rgba(255,70,70,0.85);
+  animation-name: shard;
+  animation-duration: calc(var(--dur) * 0.55);
+  animation-timing-function: ease-in;
+}
+@keyframes shard {
+  0%   { opacity: 0; transform: translate3d(0,0,0) rotate(26deg) scaleY(0.5); }
+  14%  { opacity: 1; }
+  70%  { opacity: 0.75; }
+  100% { opacity: 0; transform: translate3d(calc(var(--dx) * 2.2), calc(-1 * var(--rise)), 0) rotate(26deg) scaleY(1.6); }
+}
+
+/* Blade glint -- hard and fast, unlike the card's wide soft sheen. */
+.t-grandmaster .blade {
+  display: block;
+  position: absolute;
+  inset: 3px;
+  border-radius: 9px;
+  overflow: hidden;
+  z-index: 4;
+  pointer-events: none;
+}
+.t-grandmaster .blade i {
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: 0;
+  width: 26px;
+  display: block;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), rgba(255,150,150,0.5), transparent);
+  transform: translateX(-60px) skewX(-26deg);
+  animation: bladeSweep 7s ease-in-out infinite;
+}
+@keyframes bladeSweep {
+  0%     { opacity: 0; transform: translateX(-60px) skewX(-26deg); }
+  3%     { opacity: 1; }
+  9%     { opacity: 1; transform: translateX(420px) skewX(-26deg); }
+  10%    { opacity: 0; transform: translateX(420px) skewX(-26deg); }
+  10.1%  { opacity: 0; transform: translateX(-60px) skewX(-26deg); }
+  100%   { opacity: 0; transform: translateX(-60px) skewX(-26deg); }
+}
+
+/* ---- Challenger: engraved gold ------------------------------------------
+   Deliberately the only tier with NO floating particles and no continuous
+   animation of its own. Earlier passes gave it embers and then flames, and
+   both read as siblings of Grandmaster's shards because they were all
+   elongated things rising. The separation had to be categorical: Grandmaster
+   throws objects, Challenger is a worked surface that the sheen reveals. */
+.t-challenger { box-shadow: 0 8px 26px rgba(0,0,0,0.6), 0 0 30px rgba(240,190,90,0.34); }
+.t-challenger .frame {
+  background: linear-gradient(145deg,
+    #fffdf0 0%, #ffeeb8 11%, #e9bd55 28%, #6b4a10 47%, #e9bd55 66%, #fff2c4 87%, #fffdf0 100%);
+}
+.t-challenger .frame::after {
+  background: linear-gradient(160deg, #33260a 0%, #221807 55%, #150e04 100%);
+  box-shadow: inset 0 1px 0 rgba(255,235,170,0.32), inset 0 -1px 0 rgba(0,0,0,0.7),
+              inset 0 0 30px rgba(220,165,55,0.26);
+}
+.t-challenger .core { background: radial-gradient(ellipse at center, rgba(255,205,110,0.42), transparent 68%); }
+.t-challenger .motes { display: none; }
+.t-challenger .goal-fill { background: linear-gradient(90deg, #a97c1e, #ffe9a8); }
+.t-challenger .pl.first { background: #ffe9a8; border-color: #ffe9a8; color: #2e2205; box-shadow: 0 0 11px rgba(255,220,130,0.6); }
+
+/* Low-relief filigree: two opposed hairline gradients give the light and dark
+   sides of an engraving, so it reads as pressed into the metal rather than
+   drawn on top. Masked at both ends to keep it off the crest and the Riot ID. */
+.t-challenger .filigree {
+  display: block;
+  position: absolute;
+  inset: 3px;
+  border-radius: 9px;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.5;
+  background:
+    repeating-radial-gradient(circle at 50% 120%, rgba(255,220,140,0.12) 0 1px, transparent 1px 13px),
+    repeating-linear-gradient(58deg, rgba(255,225,150,0.10) 0 1px, transparent 1px 11px),
+    repeating-linear-gradient(-58deg, rgba(0,0,0,0.22) 0 1px, transparent 1px 11px);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 38%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 38%, #000 88%, transparent);
+}
+/* Wider, slower and warmer than the house sheen, because here it is the only
+   moving thing on the card and it has engraving to reveal. */
+.t-challenger .sheen i {
+  width: 120px;
+  animation-duration: 7s;
+  background: linear-gradient(90deg, transparent, rgba(255,240,200,0.26), transparent);
+}

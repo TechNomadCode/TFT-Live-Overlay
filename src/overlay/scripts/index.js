@@ -5,13 +5,14 @@
 // is overlay → local server and is fixed, because it costs nothing and keeps
 // the card responsive the instant new data lands.
 
-(function (ns) {
+(function (ns, Tiers) {
   'use strict';
 
   const POLL_INTERVAL_MS = 2500;
   const MAX_SCALE = 4;
 
   let lastSeenDeltaSeq = null;
+  let lastTier = null;
 
   // ?scale=1.5 renders the whole card larger. This is not the same as resizing
   // the Browser Source in OBS: that stretches an already-rendered 370x108
@@ -22,18 +23,27 @@
     if (scale > 0 && scale <= MAX_SCALE) ns.el('card').style.zoom = scale;
   }
 
+  // Master and above have no LP target, so they drop the goal row entirely.
+  // Applied on the same tick as the palette so the frame, the crest and the
+  // layout all change together.
+  function applyTierChrome(tier) {
+    ns.applyTierPalette(tier);
+    ns.el('card').classList.toggle('apex', Tiers.isApexTier(tier));
+    ns.updateCrest(tier);
+  }
+
   function render(data) {
+    // Before any tier-derived rendering: a card that has never had data drops
+    // to a passive treatment rather than showing a zeroed-out live card, which
+    // read as broken on stream.
+    const pending = ns.isPending(data);
+    ns.el('card').classList.toggle('pending', pending);
+
     ns.renderIdentity(data);
-
-    // Before checkRankChange, so a promotion banner is already wearing the
-    // colour of the tier it's announcing.
-    ns.applyTierPalette(data.tier);
-
     ns.renderRank(data);
     ns.renderPlacements(data.recentPlacements || []);
     ns.renderGoal(data);
-    ns.renderSession(data);
-    ns.renderFooterBand(data.error);
+    ns.renderFooterBand(data.error, pending);
 
     // The number always rolls the same way whether it's a normal gain/loss or
     // a promotion; only the trend marker (which uses the server's
@@ -45,8 +55,24 @@
       lastSeenDeltaSeq = data.deltaSeq;
     }
 
+    // checkRankChange first, so the takeover is already on screen before the
+    // card's material changes underneath it.
     ns.checkRankChange(data.tier, data.rank, !!data.isMockMode);
-    ns.updateCrest(data.tier);
+
+    // A tier change is the one case where the chrome must NOT update
+    // immediately: the flare peaks a third of a second in, and swapping the
+    // frame, crest and layout under that bloom is what stops a Gold card
+    // snapping to a Platinum one in a single visible frame. Same trick
+    // crest.js already uses for the crest itself.
+    const tierChanged = lastTier !== null && data.tier !== lastTier;
+    const wasTracking = lastTier !== null && lastTier !== 'UNRANKED';
+    lastTier = data.tier;
+
+    if (tierChanged && wasTracking && data.tier !== 'UNRANKED') {
+      setTimeout(() => applyTierChrome(data.tier), ns.TIER_SWAP_MS);
+    } else {
+      applyTierChrome(data.tier);
+    }
   }
 
   async function refresh() {
@@ -63,6 +89,7 @@
   ns.refresh = refresh;
 
   applyScaleFromQuery();
+  ns.buildMotes();
   refresh();
   setInterval(refresh, POLL_INTERVAL_MS);
-}(window.TFTOverlay = window.TFTOverlay || {}));
+}(window.TFTOverlay = window.TFTOverlay || {}, window.TFT.Tiers));

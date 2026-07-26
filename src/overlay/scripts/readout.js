@@ -1,14 +1,22 @@
-// The four stacked rows and the footer band: everything that is a pure
+// The three stacked rows and the footer band: everything that is a pure
 // function of the latest payload, with no animation state of its own.
+//
+// There used to be a fourth row (session LP / W-L / average). It was cut: it
+// was the least legible thing on the card, it overlapped the Riot ID band, and
+// its space is what buys the remaining rows the size they need. The server
+// still reports those fields -- the settings window's dashboard uses them.
 
-(function (ns) {
+(function (ns, Tiers) {
   'use strict';
 
   // Always renders PLACEMENT_SLOTS chips so the row can't change size as
   // history fills in.
   const PLACEMENT_SLOTS = 5;
-  // Above this length the tier label is set a few points smaller rather than
-  // ellipsised -- "GRANDMASTER", "PLATINUM III".
+  // At or above this length the tier label is set a few points smaller rather
+  // than ellipsised -- "GRANDMASTER", "PLATINUM III", "CHALLENGER".
+  // Deliberately >=, not >: "CHALLENGER" is exactly ten characters, so the old
+  // > test never shrank it. That happened to fit at the previous 17px and
+  // ellipsised to "CHALLE..." once the label grew.
   const LONG_RANK_LABEL = 10;
 
   function renderPlacements(list) {
@@ -27,10 +35,26 @@
     ns.setHtmlIfChanged(row, html);
   }
 
+  // "Nothing to show yet" is not the same as "unranked". Both arrive as
+  // tier: 'UNRANKED', so the error field is what separates them: applyUnranked()
+  // clears it, while the not-configured and never-succeeded paths set it.
+  // Testing the error alone is not enough -- a mid-stream fetch failure also
+  // sets it while keeping the last known tier, and dimming a live Diamond card
+  // over one dropped poll is exactly the wrong reaction.
+  function isPending(data) {
+    return !!data.error && data.tier === 'UNRANKED';
+  }
+
   function renderRank(data) {
-    const text = data.tier === 'UNRANKED' ? 'UNRANKED' : `${data.tier} ${data.rank}`.trim();
+    // Master/GM/Challenger have no real division -- Riot's league entries
+    // carry a fixed rank: "I" for all three anyway, which is meaningless and,
+    // appended to the longest tier names, overflows the label.
+    const text = isPending(data) ? 'NOT TRACKING'
+      : data.tier === 'UNRANKED' ? 'UNRANKED'
+        : Tiers.isApexTier(data.tier) ? data.tier
+          : `${data.tier} ${data.rank}`.trim();
     ns.setSafeText('tierRank', text);
-    ns.el('tierRank').classList.toggle('long', text.length > LONG_RANK_LABEL);
+    ns.el('tierRank').classList.toggle('long', text.length >= LONG_RANK_LABEL);
   }
 
   function renderGoal(data) {
@@ -47,20 +71,6 @@
     ns.setSafeText('goalLabel', `${data.lpToNextTier} to ${data.nextTierName}`);
   }
 
-  function renderSession(data) {
-    const row = ns.el('sessionRow');
-    const lp = data.sessionLP || 0;
-    ns.setSafeText('sessionLP', (lp >= 0 ? '+' : '') + lp + ' LP');
-
-    // Average placement only appears once there's a session game to average --
-    // "avg 0.0" on a fresh session reads as a real (terrible) statistic.
-    const avg = data.sessionAvgPlacement;
-    const record = `${data.sessionWins || 0}W-${data.sessionLosses || 0}L`;
-    ns.setSafeText('sessionRecord', avg !== null && avg !== undefined ? `${record} · avg ${avg}` : record);
-
-    row.className = 'session-row' + (lp > 0 ? ' positive' : lp < 0 ? ' negative' : '');
-  }
-
   function renderIdentity(data) {
     ns.setSafeText('gameName', data.gameName || '—');
     ns.setSafeText('tagLine', data.tagLine ? '#' + data.tagLine : '');
@@ -73,10 +83,23 @@
     ns.el('region').style.display = (data.region && !dupRegion) ? '' : 'none';
   }
 
-  /** Footer and error share one slot — only one shows at a time. */
-  function renderFooterBand(message) {
+  /**
+   * Footer and error share one slot — only one shows at a time.
+   * In the not-tracking state the message moves into the card body instead
+   * (see the wait lines): it's the expected state before setup, not a fault,
+   * and the 10.5px footer band is the wrong place to explain setup.
+   */
+  function renderFooterBand(message, pending) {
     const errorEl = ns.el('errorMsg');
     const footerEl = ns.el('footer');
+
+    if (pending) {
+      ns.setSafeText('waitReason', message || 'Add your Riot ID and API key in Settings');
+      errorEl.classList.remove('visible');
+      footerEl.classList.remove('hidden');
+      return;
+    }
+
     if (message) {
       ns.setSafeText('errorMsg', 'Overlay: ' + message);
       errorEl.classList.add('visible');
@@ -87,10 +110,10 @@
     }
   }
 
+  ns.isPending = isPending;
   ns.renderPlacements = renderPlacements;
   ns.renderRank = renderRank;
   ns.renderGoal = renderGoal;
-  ns.renderSession = renderSession;
   ns.renderIdentity = renderIdentity;
   ns.renderFooterBand = renderFooterBand;
-}(window.TFTOverlay = window.TFTOverlay || {}));
+}(window.TFTOverlay = window.TFTOverlay || {}, window.TFT.Tiers));

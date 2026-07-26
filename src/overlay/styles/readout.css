@@ -1,5 +1,10 @@
-/* The four stacked rows in the info column, top to bottom:
-   rank + LP, progress to next tier, last five placements, session summary. */
+/* The three stacked rows in the info column, top to bottom:
+   rank + LP, progress to next tier, last five placements.
+
+   There used to be a fourth row (session LP / W-L / average). It was cut, not
+   moved: it was the least legible thing on the card, it overlapped the Riot ID
+   band by ~3px, and removing it is what buys every remaining row the size it
+   needs to survive a downscale. */
 
 /* ---- Row 1: rank + LP (the primary read) ---- */
 .rank-row {
@@ -10,23 +15,25 @@
   white-space: nowrap;
 }
 .tier {
-  font-size: 17px;
+  /* inline-block so the promotion pop/dip transform actually applies. */
+  display: inline-block;
+  font-size: 19px;
   font-weight: 800;
   letter-spacing: 0.2px;
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Fit-to-box for the long labels. "GRANDMASTER" and "PLATINUM III" don't fit
-   at 17px next to a 4-digit LP value, and ellipsising the rank is worse than
-   setting it a few points smaller. */
-.tier.long { font-size: 14px; letter-spacing: 0; }
+/* Fit-to-box for the long labels. Note the threshold in readout.js is >= 10,
+   not > 10: "CHALLENGER" is exactly ten characters, so a > test never shrank
+   it. That was survivable at the old 17px and ellipsised to "CHALLE..." here. */
+.tier.long { font-size: 15px; letter-spacing: 0; }
 
 /* The LP figure is the headline. It carries the most weight on the card by a
    wide margin -- it's the number viewers actually track, and it's the one
    that has to survive a 720p downscale. */
 .lp {
-  font-size: 26px;
+  font-size: 30px;
   font-weight: 800;
   color: var(--cyan);
   position: relative;
@@ -34,17 +41,17 @@
   font-variant-numeric: tabular-nums;
   flex: 0 0 auto;
 }
-.lp .unit { font-size: 11px; font-weight: 700; opacity: 0.72; margin-left: 2px; }
+.lp .unit { font-size: 12px; font-weight: 700; opacity: 0.72; margin-left: 2px; }
 
-/* Direction marker, in place of the old corner badge. The rolling number
-   already shows the magnitude, so this only has to answer "which way" -- and
-   because it sits against the LP figure it reads as part of the same object.
-   Width is reserved permanently so the row never shifts when it appears. */
+/* Direction marker. The rolling number already shows the magnitude, so this
+   only has to answer "which way" -- and because it sits against the LP figure
+   it reads as part of the same object. Width is reserved permanently so the
+   row never shifts when it appears. */
 .lp-trend {
   flex: 0 0 auto;
-  width: 11px;
-  margin-left: 3px;
-  font-size: 11px;
+  width: 15px;
+  margin-left: 4px;
+  font-size: 15px;
   line-height: 1;
   text-align: center;
   opacity: 0;
@@ -68,63 +75,71 @@
 @keyframes lpBreathe { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.55; } }
 
 /* ---- Row 2: progress to the next tier ---- */
-/* Kept on `visibility` rather than `display` so hiding it at Master+ (where
-   there is no LP target) leaves the row's height in place and the other rows
-   don't jump. */
 .goal-row {
   display: flex;
   align-items: center;
-  gap: 7px;
-  height: 11px;
+  gap: 8px;
+  height: 14px;
 }
+/* Master and above have no LP target, so the row is removed outright rather
+   than left as reserved empty space -- that gap read as a progress bar someone
+   had cut out. The cost is a one-off reflow on promotion into Master, which
+   happens underneath the takeover banner. */
+.apex .goal-row { display: none; }
+.apex .info { gap: 8px; }
+/* Belt and braces for any non-apex tier that somehow reports no LP target:
+   visibility, not display, so the rows below don't shift. */
 .goal-row.hidden { visibility: hidden; }
+
 .goal-bar {
   flex: 1 1 auto;
-  height: 4px;
+  height: 6px;
   min-width: 0;
-  border-radius: 2px;
+  border-radius: 3px;
   background: rgba(255,255,255,0.10);
   overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
 }
 .goal-fill {
   height: 100%;
   width: 0%;
-  border-radius: 2px;
+  border-radius: 3px;
   background: linear-gradient(90deg, var(--tier-dim), var(--tier-bright));
+  box-shadow: 0 0 8px var(--tier-glow);
   transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1),
               background 0.6s ease;
 }
 .goal-label {
   flex: 0 0 auto;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.3px;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #dfe6f2;
   font-variant-numeric: tabular-nums;
 }
 
 /* ---- Row 3: last 5 placements, newest on the left ---- */
 .placements-row {
   display: flex;
-  gap: 4px;
+  gap: 5px;
   align-items: center;
-  height: 20px;
+  height: 23px;
 }
 /* Square and even-sized on purpose. Flex centring is sub-pixel accurate,
    but with an odd-width / non-square box the rasteriser rounds the glyph
    the same direction every time -- measured as a consistent 0.5px upward
-   lean at 17x16. 18x18 puts the centre on a whole pixel and that goes to
-   zero, without a font-specific nudge (the required nudge flips sign
+   lean at 17x16. An even square puts the centre on a whole pixel and that
+   goes to zero, without a font-specific nudge (the required nudge flips sign
    between fonts, so hard-coding one would break on someone else's box). */
 .pl {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  font-size: 12px;
+  width: 23px;
+  height: 23px;
+  border-radius: 5px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
@@ -135,37 +150,7 @@
 /* Tonal: hierarchy by brightness only, so cyan stays exclusive to the LP
    number and the strip never competes with it. Also survives colourblind
    viewers and OBS colour shifts, since the signal is luminance not hue. */
-.pl.first { color: #0a1520; background: var(--dim); border: 1px solid var(--dim); }
-.pl.top4  { color: var(--dim); background: rgba(207,214,228,0.07); border: 1px solid rgba(255,255,255,0.18); }
-.pl.bot4  { color: #6b7488; background: transparent; border: 1px solid rgba(255,255,255,0.08); }
-.pl.empty { color: #414959; background: transparent; border: 1px solid rgba(255,255,255,0.05); }
-
-/* ---- Row 4: session summary ---- */
-/* line-height and the overflow rule are load-bearing here: at 1.1 the line box
-   is shorter than the font's descender, so `overflow: hidden` was slicing the
-   bottom off the "g" in "avg". Give the row its natural descender room and
-   clip only horizontally. */
-.session-row {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.35;
-  white-space: nowrap;
-  overflow-x: hidden;
-  overflow-y: visible;
-  color: var(--muted);
-}
-.session-row .tag {
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: #6b7488;
-}
-.session-row .amount { font-weight: 800; color: var(--dim); font-variant-numeric: tabular-nums; }
-.session-row.positive .amount { color: var(--gain); }
-.session-row.negative .amount { color: var(--loss); }
-.session-row .sep { color: #4a5266; }
-.session-row .stat { font-variant-numeric: tabular-nums; }
+.pl.first { color: #0a1520; background: var(--dim); border: 1px solid var(--dim); box-shadow: 0 0 9px rgba(255,255,255,0.35); }
+.pl.top4  { color: #e8eef8; background: rgba(207,214,228,0.08); border: 1px solid rgba(255,255,255,0.28); }
+.pl.bot4  { color: #98a2b6; background: transparent; border: 1px solid rgba(255,255,255,0.15); }
+.pl.empty { color: #566072; background: transparent; border: 1px solid rgba(255,255,255,0.09); }
