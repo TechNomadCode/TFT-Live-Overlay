@@ -17,6 +17,12 @@ straight from the Riot API.**
 sweep runs every 7s; the sheen and the drifting shards run on their own cycles,
 so the loop seam is where they don't quite line back up.</sub>
 
+### [⬇&nbsp; Download for Windows](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-win-x64.exe)
+
+<sub>Also for [macOS · Apple Silicon](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-arm64.dmg) ·
+[macOS · Intel](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-x64.dmg) ·
+[Linux](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-linux-x86_64.AppImage)</sub>
+
 </div>
 
 ---
@@ -37,17 +43,31 @@ third-party service in the path adding its own rate limits.
 
 ## Download
 
-**[⬇ Get the latest installer](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest)**
-— pick the file for your OS, double-click, done. No Node, no clone, no build.
+**[⬇&nbsp; Download for Windows](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-win-x64.exe)**
+ · [macOS · Apple Silicon](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-arm64.dmg)
+ · [macOS · Intel](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-x64.dmg)
+ · [Linux](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-linux-x86_64.AppImage)
 
-| OS | File | Notes |
-|---|---|---|
-| **Windows** | `tft-live-overlay-<version>-win-x64.exe` | Windows SmartScreen shows "unrecognised app" — the installer isn't code-signed (a certificate is a paid, per-year thing). Click **More info** → **Run anyway**. |
-| **macOS** | `tft-live-overlay-<version>-mac-arm64.dmg` (Apple Silicon) or `-mac-x64.dmg` (Intel) | Not notarised, so Gatekeeper blocks the first launch. Right-click the app → **Open** → **Open**, or run `xattr -dr com.apple.quarantine "/Applications/TFT Live Overlay.app"`. |
-| **Linux** | the `.AppImage` | `chmod +x` it, then run it. |
+Double-click and it installs — no Node, no clone, no build step. Settings live
+in your OS app-data folder, so installing a new version over the top keeps your
+Riot ID, region and API key.
 
-Settings live in your OS app-data folder, so upgrading by installing over the
-top keeps your Riot ID, region and API key.
+<details>
+<summary>Your OS says the app is unrecognised or can't be opened</summary>
+
+The builds aren't code-signed — a Windows certificate is a paid yearly
+subscription and macOS notarisation needs an Apple Developer account, neither
+of which a free overlay app justifies. Nothing is wrong with the download;
+both systems simply don't recognise the publisher.
+
+- **Windows** — SmartScreen shows "Windows protected your PC". Click
+  **More info** → **Run anyway**.
+- **macOS** — right-click the app → **Open** → **Open** (double-clicking gives
+  you no Open button, only Cancel). If macOS insists it's damaged, clear the
+  quarantine flag: `xattr -dr com.apple.quarantine "/Applications/TFT Live Overlay.app"`
+- **Linux** — the AppImage needs the executable bit: `chmod +x tft-live-overlay-linux-x86_64.AppImage`
+
+</details>
 
 ## Running from source
 

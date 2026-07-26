@@ -28,7 +28,7 @@
       "src/**/*",
       "assets/**/*"
     ],
-    "artifactName": "${name}-${version}-${os}-${arch}.${ext}",
+    "artifactName": "${name}-${os}-${arch}.${ext}",
     "publish": [
       {
         "provider": "github",
@@ -53,7 +53,8 @@
     "linux": {
       "target": "AppImage",
       "icon": "assets/icon-256.png",
-      "category": "Utility"
+      "category": "Utility",
+      "artifactName": "${name}-linux-x86_64.${ext}"
     }
   },
   "allowScripts": {
