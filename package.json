@@ -1,6 +1,6 @@
 {
   "name": "tft-live-overlay",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Tracks TFT rank and LP with low latency and presents them in an animated overlay for Streamlabs and OBS (Browser Source)",
   "main": "src/main/index.js",
   "author": "Tech Nomad (@Splenk__ on twitch for TFT streams)",
@@ -42,7 +42,10 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ]
     },
