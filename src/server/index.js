@@ -9,6 +9,7 @@ const express = require('express');
 const path = require('path');
 
 const { defaultLog } = require('./logger');
+const { createDiagLog } = require('./diag-log');
 const { DEFAULT_POLL_INTERVAL_MS } = require('./constants');
 const { createRiotClient } = require('./riot/client');
 const { createCrestService } = require('./crest/crest-service');
@@ -19,6 +20,11 @@ const { createMockController } = require('./tracking/mock-controller');
 const { createRankRouter } = require('./routes/rank.routes');
 const { createCrestRouter } = require('./routes/crest.routes');
 const { createTestRouter } = require('./routes/test.routes');
+const { createDiagRouter } = require('./routes/diag.routes');
+
+// Only for the version/platform header at the top of each log session, so a
+// report tells us which build produced it. Not an Electron dependency.
+const pkg = require('../../package.json');
 
 // The overlay page and the shared modules it loads are served from source --
 // there is no build step, so these are the real directories.
@@ -30,10 +36,18 @@ const SHARED_DIR = path.join(__dirname, '..', 'shared');
  * @param {object} opts
  * @param {function} opts.onStatusChange - called with the latest status object whenever it changes (for the GUI dashboard)
  * @param {function} [opts.log] - custom logger, defaults to console
+ * @param {string} [opts.logDir] - directory for overlay.log; console-only if omitted.
+ *   Injected rather than resolved here because src/server must not require Electron.
  */
-function createOverlayServer({ onStatusChange, log = defaultLog } = {}) {
+function createOverlayServer({ onStatusChange, log, logDir } = {}) {
   const app = express();
   app.use(express.json());
+
+  // The file sink exists whenever a directory was given, and the module-level
+  // `log` every server module already takes is pointed at it -- so turning on
+  // file logging changed no call site anywhere.
+  const diag = createDiagLog({ dir: logDir });
+  if (!log) log = diag.path ? diag.log : defaultLog;
 
   let config = {
     riotApiKey: '',
@@ -93,6 +107,7 @@ function createOverlayServer({ onStatusChange, log = defaultLog } = {}) {
     }),
   }));
   app.use('/api/test', createTestRouter({ mock, state, emit: emitStatus }));
+  app.use('/api/diag', createDiagRouter({ diag }));
 
   // overlay.html and its styles/scripts, plus the shared modules those scripts
   // load. The filename is part of the Browser Source URL users have already
@@ -103,9 +118,21 @@ function createOverlayServer({ onStatusChange, log = defaultLog } = {}) {
   return {
     app,
 
+    // Where the app's "Open log folder" button points, and how it knows whether
+    // there is a file to point at.
+    diagnosticsPath: diag.path,
+    readDiagnostics: diag.read,
+
     start(port) {
       return new Promise((resolve, reject) => {
         httpServer = app.listen(port, () => {
+          diag.session({
+            app: `${pkg.name} ${pkg.version}`,
+            platform: `${process.platform} ${process.arch}`,
+            versions: `node ${process.versions.node}`
+              + (process.versions.electron ? `, electron ${process.versions.electron}` : '')
+              + (process.versions.chrome ? `, chrome ${process.versions.chrome}` : ''),
+          });
           log('SERVER', `Listening on http://localhost:${port}`);
           rank.start();
           resolve(port);

@@ -88,6 +88,17 @@ matters** — `/shared` and the helper modules first, `index.js` last.
 - **Placement lags LP.** Riot's match index updates after the league entry, so
   placements are fetched on a retry ladder (`PLACEMENT_CATCHUP_DELAYS_MS`).
   A placement that shows up seconds late is expected behavior, not a bug.
+- **Motion is gated on a class, not on `prefers-reduced-motion`.** It used to be
+  the media query, and one OS checkbox — Windows' "Show animations in Windows",
+  or the "Adjust for best performance" preset that every gaming guide
+  recommends — silently deleted the sheen, the particles and every rank-change
+  effect in *every* browser on that machine at once, OBS's CEF and a plain
+  Chrome tab alike. It read as a broken build, not as a preference. The card is
+  rendered for the stream's viewers, not for the operator, so the operator's
+  accessibility setting is the wrong signal; `scripts/motion.js` now writes
+  `.reduce-motion` only when the URL asks (`?motion=reduce`, or `?motion=os` to
+  opt back into the old behaviour). There are no media queries left in the
+  overlay CSS — keep it that way.
 - **Rank crests are proxied, not hotlinked.** `GET /api/crest/:tier` fetches
   from Community Dragon and normalises every tier to equal visual area with
   `sharp`. `sharp` is a native module — it prints a harmless Electron-compat
@@ -101,6 +112,15 @@ matters** — `/shared` and the helper modules first, `index.js` last.
 There's no automated test suite. Manual verification runs through the **Test**
 tab / `POST /api/test/event` and `POST /api/test/toggle-mock`, which drive mock
 rank and LP changes without burning API quota. Use mock mode for any UI work.
+
+For a machine you don't have access to, `src/overlay/scripts/selfcheck.js` is
+the channel: the overlay measures its own environment — whether the animation
+*clocks* are advancing (not whether a frame looks different, which the sheen's
+89%-idle keyframes make useless), whether each stylesheet returned rules, the
+Chromium version, the GPU — and POSTs it to `/api/diag`, which appends a
+verdict to `logs/overlay.log` in `userData`. Dashboard → Troubleshooting
+surfaces it. `diag-log.js` scrubs anything matching a Riot key on the way in
+and out, because the whole point of that file is that users send it to people.
 
 `src/server` has no Electron dependency, so it can be driven from plain Node
 for a smoke test without launching the app:

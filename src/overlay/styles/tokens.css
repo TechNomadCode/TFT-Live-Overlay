@@ -47,27 +47,52 @@ html, body {
   font-family: 'Segoe UI', Arial, sans-serif;
 }
 
-/* One place for every motion opt-out on the page. The previous version covered
-   only the sheen and the LP glow, which left the promotion takeover and the
-   crest cross-fade running for users who had asked for less motion. */
-@media (prefers-reduced-motion: reduce) {
-  .sheen i,
-  .lp::after,
-  .motes b,
-  .blade i,
-  .card.flash .flare,
-  .card.div-up,
-  .card.div-down,
-  .tier.pop,
-  .tier.dip,
-  .wait-line .pulse { animation: none !important; }
-  .wait-line .pulse { opacity: 0.7 !important; }
-  /* The particles are the motion -- with the animation off they would
-     otherwise sit frozen at their start position as visible dots. */
-  .motes b { opacity: 0 !important; }
-  .goal-fill, .emblem img, .lp-trend,
-  .moment, .moment .verb, .moment .dest, .pad { transition: none !important; }
-  /* Without the transition the recede would otherwise leave the readout
-     parked at 0.94 and blurred for the whole takeover. */
-  .card.moment-in .pad { transform: none !important; filter: none !important; }
-}
+/* One place for every motion opt-out on the page.
+ *
+ * Gated on a class, NOT on `@media (prefers-reduced-motion: reduce)`, and that
+ * is the whole point. This block used to hang off that media query, which meant
+ * one OS checkbox silently deleted the sheen, the particles, the promotion
+ * takeover and every rank-change accent -- the card still drew, it just sat
+ * completely still, so it read as "the animations are broken in this build"
+ * rather than as a preference being honoured. Two very ordinary Windows
+ * settings turn it on without ever saying the word "motion":
+ *
+ *   Ease of Access -> Display -> Show animations in Windows (off)
+ *   Performance Options -> Adjust for best performance
+ *
+ * The second one is in every "optimise Windows for gaming" guide, so a
+ * streaming PC is *more* likely to have it than a normal one. Both map to
+ * SPI_GETCLIENTAREAANIMATION, which Chromium reads on Windows, so it hit every
+ * browser on the machine at once -- OBS's CEF and a plain Chrome tab alike.
+ *
+ * The deeper problem is that the preference is being read off the wrong person.
+ * prefers-reduced-motion describes what the human looking at the screen wants;
+ * for a Browser Source the humans looking at the result are the stream's
+ * viewers, and the operator's accessibility setting says nothing about them.
+ * So motion is on by default now and scripts/motion.js turns it off only when
+ * the URL asks: `?motion=reduce` always, `?motion=os` to follow the machine
+ * (the old behaviour, for an operator who does want it in their own preview). */
+.reduce-motion .sheen i,
+.reduce-motion .lp::after,
+.reduce-motion .motes b,
+.reduce-motion .blade i,
+.reduce-motion .card.flash .flare,
+.reduce-motion .card.div-up,
+.reduce-motion .card.div-down,
+.reduce-motion .tier.pop,
+.reduce-motion .tier.dip,
+.reduce-motion .wait-line .pulse { animation: none !important; }
+.reduce-motion .wait-line .pulse { opacity: 0.7 !important; }
+/* The particles are the motion -- with the animation off they would
+   otherwise sit frozen at their start position as visible dots. */
+.reduce-motion .motes b { opacity: 0 !important; }
+.reduce-motion .goal-fill,
+.reduce-motion .emblem img,
+.reduce-motion .lp-trend,
+.reduce-motion .moment,
+.reduce-motion .moment .verb,
+.reduce-motion .moment .dest,
+.reduce-motion .pad { transition: none !important; }
+/* Without the transition the recede would otherwise leave the readout
+   parked at 0.94 and blurred for the whole takeover. */
+.reduce-motion .card.moment-in .pad { transform: none !important; filter: none !important; }

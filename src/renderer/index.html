@@ -70,6 +70,22 @@
       <div class="field-label error-label">Last Error</div>
       <div class="error-text" id="errorText"></div>
     </div>
+
+    <div class="card">
+      <div class="field-label">Troubleshooting</div>
+      <div class="btn-row">
+        <button class="btn" id="copyDiagBtn">Copy Diagnostics</button>
+        <button class="btn" id="revealLogBtn">Open Log Folder</button>
+      </div>
+      <p class="hint">
+        Open the overlay once (in OBS or with <strong>Open in Browser</strong>),
+        wait about five seconds, then copy the diagnostics. The overlay measures
+        itself in whichever browser drew it &mdash; whether the animations are
+        actually running, whether the stylesheets loaded, and what the machine
+        reports &mdash; and writes a plain-language verdict here. That's what to
+        send when the card looks wrong on someone else's PC.
+      </p>
+    </div>
   </section>
 
   <!-- ============ SETTINGS ============ -->
@@ -192,6 +208,7 @@
 <script src="scripts/bridge.js"></script>
 <script src="scripts/tabs.js"></script>
 <script src="scripts/overlay-link.js"></script>
+<script src="scripts/diagnostics.js"></script>
 <script src="scripts/settings-form.js"></script>
 <script src="scripts/test-panel.js"></script>
 <script src="scripts/status-view.js"></script>

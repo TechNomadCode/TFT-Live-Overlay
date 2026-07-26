@@ -68,7 +68,12 @@
 
 <!-- Classic scripts, not modules: the same script files have to run in the
      settings window too, which Electron loads over file:// where ES modules are
-     blocked by CORS. Order matters — /shared and dom.js first, index.js last. -->
+     blocked by CORS. Order matters — selfcheck.js first so its error handler is
+     already listening while the rest of these execute, motion.js next so the
+     motion class is set before the first paint, then /shared and dom.js, and
+     index.js last. -->
+<script src="scripts/selfcheck.js"></script>
+<script src="scripts/motion.js"></script>
 <script src="/shared/tiers.js"></script>
 <script src="scripts/dom.js"></script>
 <script src="scripts/palette.js"></script>

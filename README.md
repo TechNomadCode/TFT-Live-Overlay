@@ -121,6 +121,17 @@ source area is invisible, while a source *smaller* than the card clips it.
 > in OBS, which stretches an already-rendered 370×108 texture and goes soft.
 > Set the source to the scaled dimensions to match.
 
+> **Card looks right but nothing moves?** The sheen, the particles and the
+> rank-change effects are on by default and no OS setting can switch them
+> off any more. If you *want* them off — you find the motion distracting in
+> your own preview — add `?motion=reduce`, or `?motion=os` to follow your
+> machine's "reduce motion" accessibility setting.
+>
+> If it still doesn't move, open the overlay, wait five seconds, then use
+> **Dashboard → Troubleshooting → Copy Diagnostics**. The overlay measures
+> itself inside whichever browser drew it and writes a plain-language
+> verdict; paste that into an issue.
+
 ### Why Browser Source and not a captured window
 
 I looked at wrapping the overlay itself in the Electron window and having

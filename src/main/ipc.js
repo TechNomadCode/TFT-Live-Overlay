@@ -40,6 +40,23 @@ function registerIpcHandlers({ getOverlayServer, requestQuit }) {
 
   ipcMain.handle('get-region-map', () => REGION_MAP);
 
+  // Troubleshooting a machine we don't have. showItemInFolder rather than
+  // openPath: it reveals the file with it already selected, so "send me that
+  // file" is one drag, and it doesn't depend on a .log handler being registered.
+  ipcMain.handle('reveal-log', () => {
+    const logPath = getOverlayServer().diagnosticsPath;
+    if (!logPath) return { ok: false };
+    shell.showItemInFolder(logPath);
+    return { ok: true };
+  });
+
+  ipcMain.handle('copy-diagnostics', () => {
+    const text = getOverlayServer().readDiagnostics();
+    if (!text) return { ok: false };
+    clipboard.writeText(text);
+    return { ok: true };
+  });
+
   ipcMain.handle('quit-app', () => requestQuit());
 }
 

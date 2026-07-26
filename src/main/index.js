@@ -3,6 +3,7 @@
 // the IPC handlers and the overlay server each live in their own module -- this
 // file only decides when they come up and when they go down.
 
+const path = require('path');
 const { app, BrowserWindow, dialog } = require('electron');
 
 const { APP_NAME, OVERLAY_PORT } = require('./constants');
@@ -51,6 +52,11 @@ async function startOverlayServer() {
         mainWindow.webContents.send('status-update', status);
       }
     },
+    // A packaged app has no console anyone will ever see, which is why the first
+    // report of the overlay not animating came with no evidence at all. The
+    // server resolves nothing about this path itself -- src/server must stay
+    // free of Electron.
+    logDir: path.join(app.getPath('userData'), 'logs'),
   });
 
   try {

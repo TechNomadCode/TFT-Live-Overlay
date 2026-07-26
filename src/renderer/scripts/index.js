@@ -6,6 +6,7 @@
 
   ns.initTabs();
   ns.initOverlayLink();
+  ns.initDiagnostics();
   ns.initSettingsForm();
   ns.initTestPanel();
   ns.initStatusView();

@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('tftApp', {
   setMockMode: (enabled) => ipcRenderer.invoke('set-mock-mode', enabled),
   quitApp: () => ipcRenderer.invoke('quit-app'),
   getRegionMap: () => ipcRenderer.invoke('get-region-map'),
+  revealLog: () => ipcRenderer.invoke('reveal-log'),
+  copyDiagnostics: () => ipcRenderer.invoke('copy-diagnostics'),
   onStatusUpdate: (callback) => {
     ipcRenderer.on('status-update', (event, status) => callback(status));
   },
