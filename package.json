@@ -5,6 +5,10 @@
   "main": "src/main/index.js",
   "author": "Tech Nomad (@Splenk__ on twitch for TFT streams)",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TechNomadCode/TFT-Live-Overlay.git"
+  },
   "scripts": {
     "start": "electron .",
     "build": "electron-builder"
@@ -24,9 +28,23 @@
       "src/**/*",
       "assets/**/*"
     ],
+    "artifactName": "${name}-${version}-${os}-${arch}.${ext}",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "TechNomadCode",
+        "repo": "TFT-Live-Overlay"
+      }
+    ],
     "mac": {
       "category": "public.app-category.utilities",
-      "icon": "assets/icon-512.png"
+      "icon": "assets/icon-512.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ]
     },
     "win": {
       "target": "nsis",
@@ -34,7 +52,8 @@
     },
     "linux": {
       "target": "AppImage",
-      "icon": "assets/icon-256.png"
+      "icon": "assets/icon-256.png",
+      "category": "Utility"
     }
   },
   "allowScripts": {

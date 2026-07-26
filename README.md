@@ -7,8 +7,9 @@ straight from the Riot API.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Electron](https://img.shields.io/badge/Electron-43-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
-[![Platform](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-lightgrey)](#building-a-distributable-installer)
+[![Platform](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-lightgrey)](#download)
 [![OBS / Streamlabs](https://img.shields.io/badge/OBS%20%C2%B7%20Streamlabs-Browser%20Source-302E31)](#adding-it-to-streamlabs--obs)
+[![Latest release](https://img.shields.io/github/v/release/TechNomadCode/TFT-Live-Overlay?label=download)](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest)
 
 <img src="docs/overlay-grandmaster-sheen.webp" alt="The TFT Live Overlay card at Grandmaster, with the blade sweep crossing its crimson steel frame" width="370">
 
@@ -32,10 +33,25 @@ third-party service in the path adding its own rate limits.
 | **Rank + LP** | Current tier, division and LP. The LP figure rolls to its new value and a ▲/▼ marker shows the direction. |
 | **Progress bar** | LP remaining to the next tier. Hidden at Master+, where promotion is population-gated rather than an LP target. |
 | **Placement strip** | Your last 5 finishes, newest first — tonal, so it never competes with the LP readout. |
-| **Session line** | LP gained or lost this session, W-L record, and average placement. |
 | **Tier colours** | The accent ramp, crest bloom and promotion banner all repaint to the tier you're actually in. |
 
-## Running it
+## Download
+
+**[⬇ Get the latest installer](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest)**
+— pick the file for your OS, double-click, done. No Node, no clone, no build.
+
+| OS | File | Notes |
+|---|---|---|
+| **Windows** | `tft-live-overlay-<version>-win-x64.exe` | Windows SmartScreen shows "unrecognised app" — the installer isn't code-signed (a certificate is a paid, per-year thing). Click **More info** → **Run anyway**. |
+| **macOS** | `tft-live-overlay-<version>-mac-arm64.dmg` (Apple Silicon) or `-mac-x64.dmg` (Intel) | Not notarised, so Gatekeeper blocks the first launch. Right-click the app → **Open** → **Open**, or run `xattr -dr com.apple.quarantine "/Applications/TFT Live Overlay.app"`. |
+| **Linux** | the `.AppImage` | `chmod +x` it, then run it. |
+
+Settings live in your OS app-data folder, so upgrading by installing over the
+top keeps your Riot ID, region and API key.
+
+## Running from source
+
+Prefer to run it yourself, or want to hack on it:
 
 ```
 npm install
@@ -115,8 +131,7 @@ your Browser Source positioned and sized before you go live.
 
 ## Building a distributable installer
 
-For a double-click installer (`.exe` / `.dmg` / `.AppImage`) instead of
-running from source:
+For a local build of the installer (`.exe` / `.dmg` / `.AppImage`):
 
 ```
 npm run build
@@ -126,6 +141,34 @@ This uses `electron-builder`, configured in `package.json`, and outputs
 to a `dist/` folder. Build on the OS you're targeting — cross-compiling
 Windows installers from Mac/Linux (or vice versa) needs extra tooling
 (Wine, etc.) that isn't set up here.
+
+### Cutting a release
+
+The installers on the [Releases page](https://github.com/TechNomadCode/TFT-Live-Overlay/releases)
+are built by [`.github/workflows/release.yml`](.github/workflows/release.yml),
+which runs one job per OS — the same "build on the target OS" constraint,
+just on GitHub's runners instead of three machines of your own.
+
+1. Bump `version` in `package.json` and commit it.
+2. Tag it and push: the tag has to be `v` + that exact version, because
+   `electron-builder` names both the artifacts and the release from
+   `package.json`, not from the tag. A mismatch fails the workflow up front
+   rather than producing a `v1.0.1` tag holding `1.0.0` files.
+   ```
+   git tag v1.0.1
+   git push origin v1.0.1
+   ```
+3. All three jobs upload into the same **draft** release. Once they're green,
+   write the notes and hit **Publish release** — nothing is downloadable
+   until you do, so a failed Linux job can't leave a half-finished release
+   sitting in front of users.
+
+No secrets to configure: `GITHUB_TOKEN` is provided to the workflow
+automatically. Builds are unsigned — signing needs a paid Windows
+certificate and an Apple Developer account, which is what the SmartScreen
+and Gatekeeper warnings in [Download](#download) are about. If you ever get
+certs, `electron-builder` picks them up from `CSC_LINK` / `WIN_CSC_LINK`
+secrets with no workflow changes beyond passing them through.
 
 ## About the npm warnings
 
