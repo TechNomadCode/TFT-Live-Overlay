@@ -15,12 +15,6 @@
 
 <sub>A won game landing. Captured from the real overlay — not a mockup.</sub>
 
-### [⬇&nbsp; Download for Windows](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-win-x64.exe)
-
-<sub>[macOS · Apple Silicon](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-arm64.dmg) ·
-[macOS · Intel](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-x64.dmg) ·
-[Linux](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-linux-x86_64.AppImage)</sub>
-
 </div>
 
 ---
@@ -32,16 +26,14 @@ ID, add one Browser Source, done.
 
 ## Install
 
-| | |
-|---|---|
-| **Windows** | [`tft-live-overlay-win-x64.exe`](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-win-x64.exe) |
-| **macOS** · Apple Silicon | [`tft-live-overlay-mac-arm64.dmg`](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-arm64.dmg) |
-| **macOS** · Intel | [`tft-live-overlay-mac-x64.dmg`](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-x64.dmg) |
-| **Linux** | [`tft-live-overlay-linux-x86_64.AppImage`](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-linux-x86_64.AppImage) |
+Prebuilt installers (Windows, macOS Apple Silicon/Intel, Linux) are temporarily
+unavailable while a GitHub Support ticket on this account is resolved. Until
+then, run it from source — see [Development](#development) below; it's an
+`npm install` and `npm start` away.
 
-No Node, no clone, no build step. Settings live in your OS app-data folder rather
-than next to the app, so installing a new version over the top keeps your Riot
-ID, region and API key — and uninstalling leaves them alone.
+Once installers are back: settings live in your OS app-data folder rather than
+next to the app, so installing a new version over the top keeps your Riot ID,
+region and API key — and uninstalling leaves them alone.
 
 <details>
 <summary><b>Your OS says the app is unrecognised or can't be opened</b></summary>
