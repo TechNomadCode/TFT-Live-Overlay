@@ -1,25 +1,23 @@
 <div align="center">
 
+<img src="assets/icon-256.png" width="84" alt="">
+
 # TFT Live Overlay
 
-**Your Teamfight Tactics rank, LP swings and session record — live on stream,
-straight from the Riot API.**
+**Your Teamfight Tactics rank, LP swings and recent placements on stream — straight from the Riot API.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Electron](https://img.shields.io/badge/Electron-43-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
-[![Platform](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-lightgrey)](#download)
-[![OBS / Streamlabs](https://img.shields.io/badge/OBS%20%C2%B7%20Streamlabs-Browser%20Source-302E31)](#adding-it-to-streamlabs--obs)
-[![Latest release](https://img.shields.io/github/v/release/TechNomadCode/TFT-Live-Overlay?label=download)](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Electron 43](https://img.shields.io/badge/Electron-43-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
+[![Windows · macOS · Linux](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-lightgrey)](#install)
+[![OBS · Streamlabs](https://img.shields.io/badge/OBS%20%C2%B7%20Streamlabs-Browser%20Source-302E31)](#add-it-to-obs--streamlabs)
 
-<img src="docs/overlay-grandmaster-sheen.webp" alt="The TFT Live Overlay card at Grandmaster, with the blade sweep crossing its crimson steel frame" width="370">
+<img src="docs/overlay-live.gif" width="406" alt="The overlay card at Diamond I taking a first place: the placement strip shifts, the LP figure rolls from 45 to 83 and the bar closes on Master">
 
-<sub>The overlay card as it renders on stream, here at Grandmaster. The blade
-sweep runs every 7s; the sheen and the drifting shards run on their own cycles,
-so the loop seam is where they don't quite line back up.</sub>
+<sub>A won game landing. Captured from the real overlay — not a mockup.</sub>
 
 ### [⬇&nbsp; Download for Windows](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-win-x64.exe)
 
-<sub>Also for [macOS · Apple Silicon](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-arm64.dmg) ·
+<sub>[macOS · Apple Silicon](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-arm64.dmg) ·
 [macOS · Intel](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-x64.dmg) ·
 [Linux](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-linux-x86_64.AppImage)</sub>
 
@@ -27,273 +25,283 @@ so the loop seam is where they don't quite line back up.</sub>
 
 ---
 
-A simple desktop app that shows your Teamfight Tactics rank, LP gain/loss,
-session gains, and recent placement history on your Streamlabs or OBS stream
-with low latency — it talks to the Riot API directly, so there's no
-third-party service in the path adding its own rate limits.
+A desktop app that puts your live rank on your stream. It talks to Riot
+directly, so there's no third-party service in the path adding its own rate
+limit, its own outage, or another account to sign up for. Point it at your Riot
+ID, add one Browser Source, done.
+
+## Install
+
+| | |
+|---|---|
+| **Windows** | [`tft-live-overlay-win-x64.exe`](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-win-x64.exe) |
+| **macOS** · Apple Silicon | [`tft-live-overlay-mac-arm64.dmg`](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-arm64.dmg) |
+| **macOS** · Intel | [`tft-live-overlay-mac-x64.dmg`](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-x64.dmg) |
+| **Linux** | [`tft-live-overlay-linux-x86_64.AppImage`](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-linux-x86_64.AppImage) |
+
+No Node, no clone, no build step. Settings live in your OS app-data folder rather
+than next to the app, so installing a new version over the top keeps your Riot
+ID, region and API key — and uninstalling leaves them alone.
+
+<details>
+<summary><b>Your OS says the app is unrecognised or can't be opened</b></summary>
+
+The builds aren't code-signed — a Windows certificate is a paid yearly
+subscription and macOS notarisation needs an Apple Developer account, neither of
+which a free overlay app justifies. Nothing is wrong with the download; both
+systems simply don't recognise the publisher.
+
+| | |
+|---|---|
+| **Windows** | SmartScreen shows "Windows protected your PC" → **More info** → **Run anyway** |
+| **macOS** | Right-click the app → **Open** → **Open**. Double-clicking gives you no Open button, only Cancel. If macOS insists it's damaged: `xattr -dr com.apple.quarantine "/Applications/TFT Live Overlay.app"` |
+| **Linux** | The AppImage needs the executable bit: `chmod +x tft-live-overlay-linux-x86_64.AppImage` |
+
+</details>
+
+## Setup
+
+1. **Account** → enter your Riot ID (name + tag, no `#`) and pick your region.
+2. Paste a key from [developer.riotgames.com](https://developer.riotgames.com/).
+   Personal keys expire every 24h — paste a fresh one in the same box when that
+   happens, no restart needed.
+3. **Save changes.** Takes effect immediately.
+
+## Add it to OBS / Streamlabs
+
+**Overlay** → **Copy URL** → add a **Browser Source** pointing at it
+(`http://localhost:3000/overlay.html`).
+
+The card is **370×108**. Set the source slightly larger — say 400×130. The page
+background is transparent, so surplus source area is invisible, while a source
+*smaller* than the card clips it.
+
+The Overlay page previews the card as you configure it. That preview is the real
+overlay in an iframe, not an approximation: what you see there is what OBS draws.
+
+> **Want it bigger?** Add `?scale=1.5` to the URL. That re-renders the card at
+> the larger size and stays sharp — unlike resizing the Browser Source, which
+> stretches an already-rendered 370×108 texture.
+
+> **Want it still?** `?motion=reduce` turns the animation off, `?motion=os`
+> follows your machine's reduce-motion setting. Neither is the default — see
+> [How it works](#how-it-works) for why. If the card is *unintentionally* frozen,
+> **Help → Send a report**: the overlay measures itself inside whichever browser
+> drew it and writes a plain-language verdict you can paste into an issue.
 
 ## What's on the card
 
 | | |
 |---|---|
-| **Rank + LP** | Current tier, division and LP. The LP figure rolls to its new value and a ▲/▼ marker shows the direction. |
-| **Progress bar** | LP remaining to the next tier. Hidden at Master+, where promotion is population-gated rather than an LP target. |
-| **Placement strip** | Your last 5 finishes, newest first — tonal, so it never competes with the LP readout. |
-| **Tier colours** | The accent ramp, crest bloom and promotion banner all repaint to the tier you're actually in. |
+| **Rank + LP** | Tier, division and LP. The figure rolls to its new value; a ▲/▼ marker shows the direction and fades. |
+| **Progress bar** | LP to the next tier. Dropped at Master+, where promotion is population-gated rather than an LP target. |
+| **Placement strip** | Last 5 finishes, newest first. Tonal, so it never competes with the LP readout. |
+| **Rank moments** | A division change gets a 1s accent. A tier change gets the full takeover. |
 
-## Download
+Every tier gets its own material, not a hue rotation of one card: Grandmaster is
+bladed crimson steel with a hard fast glint, Challenger is engraved gold with no
+particles at all and a slow sheen that reveals the engraving.
 
-**[⬇&nbsp; Download for Windows](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-win-x64.exe)**
- · [macOS · Apple Silicon](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-arm64.dmg)
- · [macOS · Intel](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-mac-x64.dmg)
- · [Linux](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest/download/tft-live-overlay-linux-x86_64.AppImage)
+<div align="center">
 
-No Node, no clone, no build step. On Windows the installer asks where you want
-it and whether to install for everyone or just you. Settings live in your OS
-app-data folder rather than next to the app, so installing a new version over
-the top keeps your Riot ID, region and API key — and uninstalling leaves them
-alone.
+<img src="docs/overlay-tiers.png" width="820" alt="All ten tiers of the overlay card side by side, from Iron through Challenger, each with its own frame material, particle behaviour and colour ramp">
 
-<details>
-<summary>Your OS says the app is unrecognised or can't be opened</summary>
+</div>
 
-The builds aren't code-signed — a Windows certificate is a paid yearly
-subscription and macOS notarisation needs an Apple Developer account, neither
-of which a free overlay app justifies. Nothing is wrong with the download;
-both systems simply don't recognise the publisher.
+A tier change is the rarest thing that happens on a ranked stream and the most
+worth clipping, so it gets the whole card for two and a half seconds — and the
+card comes back in the colour of the tier you landed in. Frame, crest, particle
+behaviour and colour ramp all swap under the flare, rather than snapping over
+in one visible frame.
 
-- **Windows** — SmartScreen shows "Windows protected your PC". Click
-  **More info** → **Run anyway**.
-- **macOS** — right-click the app → **Open** → **Open** (double-clicking gives
-  you no Open button, only Cancel). If macOS insists it's damaged, clear the
-  quarantine flag: `xattr -dr com.apple.quarantine "/Applications/TFT Live Overlay.app"`
-- **Linux** — the AppImage needs the executable bit: `chmod +x tft-live-overlay-linux-x86_64.AppImage`
+<div align="center">
 
-</details>
+<img src="docs/overlay-moment.gif" width="450" alt="The overlay card promoting from Diamond I into Master and then demoting back: a flare takes the card over, a banner reads Promoted Master, and the card returns repainted in Master's purple before the demotion reverses it">
 
-## Running from source
+<sub>Promotion into Master, then the demotion back out of it.</sub>
 
-Prefer to run it yourself, or want to hack on it:
+</div>
 
+## How it works
+
+```mermaid
+flowchart LR
+  R["Riot API"] -->|"every 5s"| S["Express :3000<br/>poll loop · trackers · crest proxy"]
+  S -->|"GET /api/rank · every 2.5s"| O["overlay.html"]
+  O --> B["OBS / Streamlabs<br/>Browser Source"]
+  W["App window<br/>settings · preview · practice"] <-->|"IPC · live config"| S
 ```
+
+Two poll loops at different rates, deliberately: server → Riot is
+user-configurable and defaults to 5s, sized against a personal key's 100
+requests/2min, while overlay → server is a fixed 2.5s because a localhost request
+costs nothing. The window and the server are one process, so saving a new key or
+region takes effect on the next poll instead of needing a restart.
+
+A few decisions worth the detour:
+
+- **Browser Source, not window capture.** Streamlabs renders a Browser Source
+  off-screen in its own Chromium and composites it straight into the stream.
+  Capturing a window instead adds a hop — GPU draws it, the OS compositor
+  composites it, then OBS captures *that* — and alpha-transparent window capture
+  is famously dependent on capture method and GPU driver. So the app is a GUI in
+  front of a local HTTP server, not a window to point OBS at.
+
+- **A poll is two awaited round-trips, so it can outlive its own config.**
+  Saving a new Riot ID mid-flight let the old identity's 404 land afterwards and
+  overwrite fresh state. Each poll captures an `identityEpoch` and drops its
+  result if it no longer matches.
+
+- **Error strings are UI copy, not diagnostics.** They render into a 222px-wide,
+  10.5px footer band, on stream, in front of viewers. Riot answers failures with
+  a JSON body, and interpolating that into the thrown error put
+  `Riot API 401: {"status":{"message":"Forbid…` on the card, truncated
+  mid-object. Status codes now map to short sentences; the raw body goes to the
+  log.
+
+- **Motion is gated on a URL flag, not `prefers-reduced-motion`.** It used to be
+  the media query — and one OS checkbox (Windows' "Show animations", which every
+  gaming perf guide tells you to turn off) silently deleted the sheen, the
+  particles and every rank-change effect in every browser on that machine at
+  once. It read as a broken build. The card is rendered for the *viewers*, so
+  the operator's accessibility setting is the wrong signal.
+
+- **The overlay can diagnose itself on a machine you don't have.** It measures
+  whether the animation *clocks* are advancing (not whether a frame looks
+  different — the sheen is idle 89% of its cycle, which makes pixel diffing
+  useless), whether each stylesheet returned rules, the Chromium version and the
+  GPU, then POSTs that to `/api/diag`. Anything matching a Riot key is scrubbed
+  on the way in and out, because the whole point of the file is that people send
+  it to strangers.
+
+- **Rank crests are proxied and normalised, not hotlinked.** `GET /api/crest/:tier`
+  fetches from Community Dragon and equalises every tier to the same visual area
+  with `sharp`, so a plain `object-fit: contain` renders them at a consistent
+  size.
+
+## Development
+
+No bundler, no TypeScript, no build step — what's in `src/` is what runs.
+
+```bash
 npm install
 npm start
 ```
-
-**If `npm start` errors with "Electron failed to install correctly":**
-Recent npm versions block dependency install scripts by default (a response
-to a run of real supply-chain attacks on npm packages in late 2025/2026) —
-Electron's install script is what downloads its actual binary, so if it
-gets blocked, `node_modules/electron` ends up empty. This `package.json`
-ships with `electron` and `electron-winstaller` (used when building a
-Windows installer) pre-approved via the `allowScripts` field, so a normal
-`npm install` shouldn't hit this. If it still does — e.g. a newer npm
-changes the format, or a future dependency adds its own install script —
-fix it the same way:
-```
-npm install-scripts approve <package-name>
-npm install
-```
-Run `npm install-scripts ls` first if you're not sure which package needs it.
-
-A window opens with four pages in the sidebar: **Overlay**, **Account**,
-**Practice** and **Help**. The app also adds a tray icon — closing the window
-just hides it; the overlay server keeps running so Streamlabs/OBS never loses
-connection. Quit fully from the sidebar's **Quit** button or the tray icon.
-
-## First-time setup
-
-1. Open **Account**
-2. Enter your Riot ID (name + tag, no `#`) and pick your region
-3. Paste a Riot API key from [developer.riotgames.com](https://developer.riotgames.com/) — personal keys expire every 24h, just paste a fresh one in here when that happens, no restart needed
-4. Click **Save changes** — takes effect immediately
-
-## Adding it to Streamlabs / OBS
-
-Go to **Overlay** → click **Copy URL** → add a **Browser Source** in
-Streamlabs pointing to that URL (`http://localhost:3000/overlay.html`
-by default).
-
-The **Overlay** page also shows a live preview of the card. It's the real
-overlay in an iframe, not an approximation — what you see there is what OBS
-draws.
-
-The card itself is 370×108. Set the Browser Source slightly larger than
-that (say 400×130) — the page background is transparent, so surplus
-source area is invisible, while a source *smaller* than the card clips it.
-
-> **Want it bigger?** Add `?scale=1.5` to the URL. That re-renders the card
-> at the larger size, which stays sharp — unlike resizing the Browser Source
-> in OBS, which stretches an already-rendered 370×108 texture and goes soft.
-> Set the source to the scaled dimensions to match.
-
-> **Card looks right but nothing moves?** The sheen, the particles and the
-> rank-change effects are on by default and no OS setting can switch them
-> off any more. If you *want* them off — you find the motion distracting in
-> your own preview — add `?motion=reduce`, or `?motion=os` to follow your
-> machine's "reduce motion" accessibility setting.
->
-> If it still doesn't move, open the overlay, wait five seconds, then use
-> **Help → Send a report → Copy report for support**. The overlay measures
-> itself inside whichever browser drew it and writes a plain-language
-> verdict; paste that into an issue.
-
-### Why Browser Source and not a captured window
-
-I looked at wrapping the overlay itself in the Electron window and having
-OBS/Streamlabs capture that window instead. It's worse on every axis:
-
-- **Browser Source renders off-screen**, composited directly into the
-  stream by Streamlabs' own lightweight Chromium instance — no visible
-  window, no window manager, no extra compositing step.
-- **Window capture adds a hop**: your GPU draws the window, the OS
-  compositor (DWM on Windows) composites it, then OBS/Streamlabs has to
-  capture *that* composited output — extra latency and a common source of
-  stutter, especially with anything transparent.
-- **Transparency is fragile with window capture** — getting a truly
-  alpha-transparent capture working reliably (vs. a black or checkered
-  background) depends on capture method and GPU driver, and breaks
-  across setups. Browser Source transparency just works, always has.
-
-So the app still runs the exact same local HTTP server approach — the
-GUI is just for configuring and monitoring it instead of editing files
-and env vars by hand.
-
-## Trying it without playing a game
-
-The **Test** tab drives the overlay through mock rank and LP changes
-without spending any of your API key's quota — simulate a win, a loss, a
-promotion, a demotion or an error and watch the card react. Use it to get
-your Browser Source positioned and sized before you go live.
-
-## Building a distributable installer
-
-For a local build of the installer (`.exe` / `.dmg` / `.AppImage`):
-
-```
-npm run build
-```
-
-This uses `electron-builder`, configured in `package.json`, and outputs
-to a `dist/` folder. Build on the OS you're targeting — cross-compiling
-Windows installers from Mac/Linux (or vice versa) needs extra tooling
-(Wine, etc.) that isn't set up here.
-
-### Cutting a release
-
-The installers on the [Releases page](https://github.com/TechNomadCode/TFT-Live-Overlay/releases)
-are built by [`.github/workflows/release.yml`](.github/workflows/release.yml),
-which runs one job per OS — the same "build on the target OS" constraint,
-just on GitHub's runners instead of three machines of your own.
-
-1. Bump `version` in `package.json` and commit it.
-2. Tag it and push: the tag has to be `v` + that exact version, because
-   `electron-builder` names both the artifacts and the release from
-   `package.json`, not from the tag. A mismatch fails the workflow up front
-   rather than producing a `v1.0.1` tag holding `1.0.0` files.
-   ```
-   git tag v1.0.1
-   git push origin v1.0.1
-   ```
-3. All three jobs upload into the same **draft** release. Once they're green,
-   write the notes and hit **Publish release** — nothing is downloadable
-   until you do, so a failed Linux job can't leave a half-finished release
-   sitting in front of users.
-
-No secrets to configure: `GITHUB_TOKEN` is provided to the workflow
-automatically. Builds are unsigned — signing needs a paid Windows
-certificate and an Apple Developer account, which is what the SmartScreen
-and Gatekeeper warnings in [Download](#download) are about. If you ever get
-certs, `electron-builder` picks them up from `CSC_LINK` / `WIN_CSC_LINK`
-secrets with no workflow changes beyond passing them through.
-
-## About the npm warnings
-
-**Deprecated package warnings** (`inflight`, `glob@7.x`, `boolean@3.2.0`, `tar@6.2.1`)
-all come from inside `electron-builder`'s own dependency tree — not
-anything this project imports directly. They only matter for `npm run
-build` (packaging an installer), never for `npm start`.
-
-**Vulnerabilities**: `npm audit` reports **16 high severity** on a fresh
-install. That number is misleading — it's one advisory counted once per
-dependency path.
-
-All 16 resolve to a single DoS in `brace-expansion`
-([GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg),
-CVSS 7.5), where a crafted glob pattern can force unbounded expansion and
-exhaust memory. Every path reaches it through `electron-builder`
-(`@electron/asar` → `glob` → `minimatch` → `brace-expansion`, and
-variations on that chain).
-
-It doesn't affect the app or anyone running it:
-
-- `electron-builder` is a **devDependency**. It runs only for
-  `npm run build` when packaging an installer — `npm start` never loads it.
-- The `build.files` list is explicit, so only this project's own source is
-  packaged. Nothing from the vulnerable chain ships to an installed app.
-- The glob patterns it expands come from this repo's own `package.json`,
-  not from user input or any network source. Triggering the DoS would mean
-  feeding your own build tool a hostile pattern by hand.
-
-**It's deliberately not patched**, because it currently can't be without
-breaking the build. The fix only exists in `brace-expansion` 5.0.8+, and v5
-changed its export from a callable function to an object (`{ expand }`).
-Every consumer in the chain still calls it as a function — see
-`minimatch.js`, `var expand = require('brace-expansion')` then
-`expand(pattern)` — so an `overrides` entry forcing v5 breaks packaging
-outright. `npm audit fix --force` is no better: its suggestion is to
-*downgrade* `electron-builder` 26.15.3 → 25.1.8, which is a major version
-backwards and doesn't clear the advisory either.
-
-This clears itself when `electron-builder` updates its own dependency
-chain. Worth re-checking with `npm audit` now and then; there's nothing to
-act on in the meantime.
-
-**Earlier audit history**: an initial pass cleared 9 findings (8 high, 1
-critical) by bumping `electron-builder` `24.13.3 → ^26.0.0` and `electron`
-`30.0.0 → ^43.0.0`. The Electron CVE (ASAR integrity bypass, plus an
-AppleScript injection issue on macOS) only applied to apps using specific
-opt-in hardening flags or `app.moveToApplicationsFolder()` — neither of
-which this app does — but it was closed outright rather than argued.
-
-
-## Project layout
-
-No bundler and no build step — what's in `src/` is what runs.
 
 ```
 src/
 ├── shared/     tier + LP domain logic, loadable from Node and the browser alike
 ├── main/       Electron main process: lifecycle, tray, window, settings, IPC
 ├── preload/    the contextBridge surface (window.tftApp)
-├── renderer/   the settings/dashboard window
+├── renderer/   the app window — Overlay, Account, Practice, Help
 ├── overlay/    overlay.html and its styles/scripts — what OBS loads
 └── server/     Express + Riot polling, split into riot/, tracking/, crest/, routes/
 ```
 
+Closing the window hides it to tray; the server stays up so OBS never loses
+connection. Quit properly from the sidebar or the tray icon.
+
+There's no automated test suite. The **Practice** page (`POST /api/test/event`)
+drives mock rank and LP changes through the real code paths without spending API
+quota — that's how every overlay state gets exercised. `src/server` has no
+Electron dependency, so it also runs under plain Node:
+
+```bash
+node -e "require('./src/server').createOverlayServer({onStatusChange(){}}).start(3999)"
+```
+
+<details>
+<summary><b>Building an installer, and cutting a release</b></summary>
+
+`npm run build` runs `electron-builder` (configured in `package.json`) into
+`dist/`. Build on the OS you're targeting — cross-compiling NSIS or dmg needs
+tooling that isn't set up here, which is also why
+[`.github/workflows/release.yml`](.github/workflows/release.yml) runs one job per
+OS on GitHub's runners.
+
+1. Bump `version` in `package.json` and commit.
+2. Tag it as `v` + that exact version. `electron-builder` names the artifacts and
+   the release from `package.json`, not from the tag, so a mismatch fails the
+   workflow up front rather than shipping a `v1.0.1` tag full of `1.0.0` files.
+   ```bash
+   git tag v1.0.1 && git push origin v1.0.1
+   ```
+3. All three jobs upload into the same **draft** release. Nothing is downloadable
+   until you publish it, so a failed Linux job can't leave a half-finished
+   release in front of users.
+
+No secrets to configure — `GITHUB_TOKEN` is provided automatically. Builds are
+unsigned; `electron-builder` picks up `CSC_LINK` / `WIN_CSC_LINK` with no
+workflow changes if you ever get certificates.
+
+</details>
+
+<details>
+<summary><b>Regenerating the README's imagery</b></summary>
+
+Every image above is a capture of the real Electron window driven through the
+real server, not a hand-built mockup — a mockup drifts from the app immediately.
+
+```bash
+npx electron docs/_gif-build/capture.js   # frames + docs/overlay-tiers.png
+node docs/_gif-build/encode.js            # the two GIFs
+```
+
+See [`docs/_gif-build/gif-capture.md`](docs/_gif-build/gif-capture.md) for the
+multi-pass capture scheme and the gotchas it exists to work around.
+
+</details>
+
+<details>
+<summary><b>About the npm warnings</b></summary>
+
+**Deprecation warnings** (`inflight`, `glob@7.x`, `boolean@3.2.0`, `tar@6.2.1`)
+all come from inside `electron-builder`'s dependency tree. They matter for
+`npm run build`, never for `npm start`.
+
+**`npm audit` reports 16 high severity** on a fresh install. That's one advisory
+counted once per dependency path: a DoS in `brace-expansion`
+([GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg)) where
+a crafted glob can force unbounded expansion. Every path reaches it through
+`electron-builder`, which is a devDependency; `build.files` is an explicit list,
+so nothing from that chain ships in an installer; and the patterns it expands
+come from this repo's own `package.json`, not from user input. Triggering it
+would mean handing your own build tool a hostile pattern by hand.
+
+It's deliberately not patched, because it currently can't be. The fix only exists
+in `brace-expansion` 5.0.8+, and v5 changed its export from a callable function
+to an object — every consumer in the chain still calls it as a function, so an
+`overrides` entry forcing v5 breaks packaging outright. `npm audit fix --force`
+suggests *downgrading* `electron-builder` a major version, which doesn't clear
+the advisory either. This resolves itself when `electron-builder` updates its own
+chain.
+
+**If `npm start` says "Electron failed to install correctly":** recent npm
+versions block dependency install scripts by default, and Electron's install
+script is what downloads its binary. `package.json` pre-approves `electron` and
+`electron-winstaller` via `allowScripts`, so a normal install shouldn't hit this.
+If a future dependency does: `npm install-scripts approve <package>`, then
+reinstall. `npm install-scripts ls` lists candidates.
+
+</details>
+
 ## Notes
 
-- Settings are stored in your OS's app-data folder (`app.getPath('userData')`),
-  not in the project folder — safe to move/reinstall the app without losing config.
-- The overlay port is fixed at `3000` so an existing Streamlabs Browser
-  Source keeps working across updates without reconfiguring.
-- On Linux, `sharp` (used to auto-trim rank crest images) prints a startup
-  warning about Electron binary compatibility — this is a known, generally
-  harmless notice; it was tested working correctly during development.
-  Windows/Mac don't show this warning.
-- LP only updates once Riot finishes processing a completed match — polling
-  faster than a few seconds doesn't get you fresher data sooner. The default
-  is 5s, which stays comfortably within a personal key's rate limit
-  (100 requests/2min); go higher in Settings if you'd rather be extra
-  conservative with your key's quota.
+- Settings live in `app.getPath('userData')`, never in the project folder — it
+  holds a Riot API key.
+- The port is fixed at **3000** and the overlay path is fixed at
+  `/overlay.html`, so a Browser Source configured once keeps working across
+  updates.
+- LP only moves once Riot finishes processing a match. Polling faster than a few
+  seconds doesn't get you fresher data, it just spends quota.
+- On Linux, `sharp` prints a startup warning about Electron binary
+  compatibility. Known, harmless, works anyway. Windows and macOS don't show it.
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
 
-## Disclaimer
-
-TFT Live Overlay isn't endorsed by Riot Games and doesn't reflect the views or
-opinions of Riot Games or anyone officially involved in producing or managing
-Riot Games properties. Riot Games and all associated properties are trademarks
-or registered trademarks of Riot Games, Inc.
+<sub>TFT Live Overlay isn't endorsed by Riot Games and doesn't reflect the views
+of Riot Games or anyone officially involved in producing or managing Riot Games
+properties. Riot Games and all associated properties are trademarks or registered
+trademarks of Riot Games, Inc.</sub>

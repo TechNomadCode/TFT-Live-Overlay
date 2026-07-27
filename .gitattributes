@@ -9,6 +9,7 @@
 *.icns binary
 *.jpg binary
 *.webp binary
+*.gif binary
 
 # Keep the lockfile out of diffs and merge-conflict noise in reviews.
 package-lock.json -diff linguist-generated

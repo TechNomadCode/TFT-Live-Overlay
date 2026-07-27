@@ -1,90 +1,60 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>README preview</title>
+<html lang="en"><head><meta charset="utf-8"><title>README asset preview</title>
+<!--
+  The two README images at the exact widths the README sets them, on both of
+  GitHub's canvas colours. This is the only way to check the thing the encoder
+  has to get right: overlay-live.gif is flattened onto #0d1117, so it should
+  disappear into the dark theme and still read as a deliberate screenshot of a
+  dark app on the light one.
+
+  Open it directly -- file:// is fine, there is nothing to serve.
+
+  Deliberately contains NO copy of the README's prose. The version this replaced
+  was a hand-maintained HTML transcription of the README, and by the time anyone
+  looked at it again it was two rewrites out of date and pointing at six images
+  that no longer existed.
+-->
 <style>
-  body { background:#0d1117; color:#e6edf3; font-family:-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
-         font-size:16px; line-height:1.6; margin:0; padding:32px; }
-  .wrap { max-width:1012px; margin:0 auto; background:#0d1117; border:1px solid #30363d; border-radius:6px; padding:45px; }
-  h1 { font-size:2em; border-bottom:1px solid #30363d; padding-bottom:.3em; margin:.67em 0 16px; }
-  h2 { font-size:1.5em; border-bottom:1px solid #30363d; padding-bottom:.3em; margin:24px 0 16px; }
-  h3 { font-size:1.25em; margin:24px 0 16px; }
-  p { margin:0 0 16px; }
-  hr { height:.25em; background:#30363d; border:0; margin:24px 0; }
-  code { background:#151b23; padding:.2em .4em; border-radius:6px; font-size:85%;
-         font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
-  pre { background:#151b23; padding:16px; border-radius:6px; overflow:auto; }
-  pre code { background:none; padding:0; }
-  a { color:#4493f8; text-decoration:none; }
-  table { border-collapse:collapse; margin:0 0 16px; display:block; width:max-content; max-width:100%; overflow:auto; }
-  td { border:1px solid #3d444d; padding:6px 13px; }
-  tr:nth-child(2n) { background:#151b23; }
-  blockquote { border-left:.25em solid #3d444d; color:#9198a1; padding:0 1em; margin:0 0 16px; }
-  sub { font-size:85%; color:#9198a1; }
-  .center { text-align:center; }
-  .badges img { height:20px; margin:2px; vertical-align:middle; }
-  ul { padding-left:2em; margin:0 0 16px; }
-  li { margin-top:.25em; }
-  .gallery img { margin:4px; vertical-align:top; }
-</style></head><body><div class="wrap">
+  body { margin:0; font:14px/1.6 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif; }
+  /* The README column on github.com is ~1012px wide; nothing may exceed it. */
+  section { padding:40px; max-width:1012px; }
+  .dark  { background:#0d1117; color:#e6edf3; }
+  .light { background:#ffffff; color:#1f2328; }
+  h2 { font-size:12px; text-transform:uppercase; letter-spacing:.08em; opacity:.55; margin:0 0 24px; font-weight:600; }
+  figure { margin:0 0 32px; }
+  figcaption { font-size:12px; opacity:.55; margin-top:8px; font-family:ui-monospace,Consolas,monospace; }
+</style></head><body>
 
-<div class="center">
-<h1 style="border:0;">TFT Live Overlay</h1>
-<p><strong>Your Teamfight Tactics rank, LP swings and session record — live on stream,
-straight from the Riot API.</strong></p>
-<p class="badges">
-<img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT">
-<img src="https://img.shields.io/badge/Electron-43-47848F?logo=electron&logoColor=white" alt="Electron">
-<img src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-lightgrey" alt="Platform">
-<img src="https://img.shields.io/badge/OBS%20%C2%B7%20Streamlabs-Browser%20Source-302E31" alt="OBS">
-</p>
-<p><img src="../overlay-sheen.gif" alt="sheen" width="370"></p>
-<p><sub>The overlay card as it renders on stream. <strong>The sheen loop is tightened here</strong> —
-the real animation sweeps once every 9s and sits transparent in between, so this
-preview keeps the ~1s sweep and collapses the idle stretch into a single held frame.</sub></p>
-</div>
+<section class="dark">
+  <h2>Dark canvas &mdash; #0d1117</h2>
+  <figure>
+    <img src="../overlay-live.gif" width="406" alt="">
+    <figcaption>overlay-live.gif @ width=406 (2x capture)</figcaption>
+  </figure>
+  <figure>
+    <img src="../overlay-moment.gif" width="450" alt="">
+    <figcaption>overlay-moment.gif @ width=450 (1x, native)</figcaption>
+  </figure>
+  <figure>
+    <img src="../overlay-tiers.png" width="820" alt="">
+    <figcaption>overlay-tiers.png @ width=820</figcaption>
+  </figure>
+</section>
 
-<hr>
+<section class="light">
+  <h2>Light canvas &mdash; #ffffff</h2>
+  <figure>
+    <img src="../overlay-live.gif" width="406" alt="">
+    <figcaption>overlay-live.gif @ width=406 (2x capture)</figcaption>
+  </figure>
+  <figure>
+    <img src="../overlay-moment.gif" width="450" alt="">
+    <figcaption>overlay-moment.gif @ width=450 (1x, native)</figcaption>
+  </figure>
+  <figure>
+    <img src="../overlay-tiers.png" width="820" alt="">
+    <figcaption>overlay-tiers.png @ width=820</figcaption>
+  </figure>
+</section>
 
-<p>A simple desktop app that shows your Teamfight Tactics rank, LP gain/loss,
-session gains, and recent placement history on your Streamlabs or OBS stream
-with low latency — it talks to the Riot API directly, so there's no
-third-party service in the path adding its own rate limits.</p>
-
-<h2>What's on the card</h2>
-<table><tbody>
-<tr><td><strong>Rank + LP</strong></td><td>Current tier, division and LP. The LP figure rolls to its new value and a ▲/▼ marker shows the direction.</td></tr>
-<tr><td><strong>Progress bar</strong></td><td>LP remaining to the next tier. Hidden at Master+, where promotion is population-gated rather than an LP target.</td></tr>
-<tr><td><strong>Placement strip</strong></td><td>Your last 5 finishes, newest first — tonal, so it never competes with the LP readout.</td></tr>
-<tr><td><strong>Session line</strong></td><td>LP gained or lost this session, W-L record, and average placement.</td></tr>
-<tr><td><strong>Tier colours</strong></td><td>The accent ramp, crest bloom and promotion banner all repaint to the tier you're actually in.</td></tr>
-</tbody></table>
-
-<h2>Every tier, and the moments that matter</h2>
-<div class="center gallery">
-<p><img src="../overlay-iron.png" width="340"> <img src="../overlay-silver.png" width="340"></p>
-<p><img src="../overlay-diamond.png" width="340"> <img src="../overlay-grandmaster.png" width="340"></p>
-<p><img src="../overlay-promotion.png" width="340"> <img src="../overlay-demotion.png" width="340"></p>
-<p><sub>A tier change takes the card over for ~2.6s in the colour of the tier you landed in —
-the single most clippable moment on a ranked stream.</sub></p>
-</div>
-
-<h2>Running it</h2>
-<pre><code>npm install
-npm start</code></pre>
-
-<h2>Adding it to Streamlabs / OBS</h2>
-<p>Go to <strong>Dashboard</strong> → click <strong>Copy URL</strong> → add a <strong>Browser Source</strong> in
-Streamlabs pointing to that URL (<code>http://localhost:3000/overlay.html</code> by default).</p>
-<p>The card itself is 370×108. Set the Browser Source slightly larger than
-that (say 400×130) — the page background is transparent, so surplus
-source area is invisible, while a source <em>smaller</em> than the card clips it.</p>
-<blockquote><p><strong>Want it bigger?</strong> Add <code>?scale=1.5</code> to the URL. That re-renders the card
-at the larger size, which stays sharp — unlike resizing the Browser Source
-in OBS, which stretches an already-rendered 370×108 texture and goes soft.
-Set the source to the scaled dimensions to match.</p></blockquote>
-
-<h2>Trying it without playing a game</h2>
-<p>The <strong>Test</strong> tab drives the overlay through mock rank and LP changes
-without spending any of your API key's quota — simulate a win, a loss, a
-promotion, a demotion or an error and watch the card react.</p>
-
-</div></body></html>
+</body></html>

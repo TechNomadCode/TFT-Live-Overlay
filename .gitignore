@@ -37,8 +37,8 @@ ehthumbs.db
 docs/TODO.txt
 
 # Docs capture pipeline: the capture/encode scripts and their notes ARE
-# committed, the intermediate frames they emit are not -- ~15MB of regenerable
-# PNGs whose only meaningful output, docs/overlay-grandmaster-sheen.webp, is
-# committed instead.
-docs/_gif-build/frame-*.png
-docs/_gif-build/frames.json
+# committed, the intermediate frames they emit are not -- tens of MB of
+# regenerable PNGs. Only what encode.js makes of them (docs/overlay-live.gif,
+# docs/overlay-moment.gif) and docs/overlay-tiers.png are committed.
+docs/_gif-build/*-[0-9][0-9][0-9].png
+docs/_gif-build/frames-*.json
