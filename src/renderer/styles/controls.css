@@ -92,6 +92,17 @@ select.input:disabled {
 .btn:hover { background: #262e3e; border-color: var(--border-strong); }
 .btn:active { background: #2e3749; }
 
+/* Matches .input:disabled. Without this a disabled button was indistinguishable
+   from a live one -- same colour, same pointer cursor, and clicks silently did
+   nothing, which reads as the app being broken rather than the button being
+   unavailable. :disabled beats the hover rules by specificity. */
+.btn:disabled {
+  color: var(--faint);
+  background: rgba(255,255,255,0.015);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+
 .btn.primary {
   background: linear-gradient(180deg, #7ee0ff, #4fb3d4);
   border-color: #4fb3d4;
@@ -117,6 +128,18 @@ select.input:disabled {
 
 .btn.small { height: 28px; padding: 0 var(--s3); font-size: var(--fs-xs); }
 .btn.wide { width: 100%; }
+
+/* Some buttons are links, because they leave the app rather than doing
+   something in it. An inline anchor ignores the height above. */
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  text-decoration: none;
+  color: var(--text);
+}
+a.btn svg { width: 14px; height: 14px; }
 
 .btn-row {
   display: flex;

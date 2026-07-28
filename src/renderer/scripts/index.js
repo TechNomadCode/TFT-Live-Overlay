@@ -10,5 +10,6 @@
   ns.initDiagnostics();
   ns.initSettingsForm();
   ns.initTestPanel();
+  ns.initSupport();
   ns.initStatusView();
 }(window.TFTSettings = window.TFTSettings || {}));

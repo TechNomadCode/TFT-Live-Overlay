@@ -34,7 +34,7 @@ assets/         app/tray icons (outside src/, referenced by electron-builder)
 - **`src/main/`** — `index.js` is lifecycle only (single-instance lock,
   `gracefulShutdown`, wiring). The tray, the window, `settings.json` in
   `app.getPath('userData')` (never in the repo — it holds a Riot API key), the
-  region map and the IPC handlers each have their own module. Every
+  region map, the auto-updater and the IPC handlers each have their own module. Every
   `ipcMain.handle` lives in `main/ipc.js` and nowhere else, mirrored
   one-for-one in the preload.
 - **`src/preload/index.js`** — the entire IPC surface, exposed as
@@ -42,7 +42,8 @@ assets/         app/tray icons (outside src/, referenced by electron-builder)
   `nodeIntegration: false`. Adding a renderer capability means adding it here
   *and* in `main/ipc.js`.
 - **`src/renderer/`** — the app window (plain HTML/CSS/JS, no framework). A
-  fixed sidebar and four pages: Overlay, Account, Practice, Help. Scripts are
+  fixed sidebar and five pages: Overlay, Account, Practice, Help, Support.
+  Scripts are
   split by panel, each exposing one `init`, called from `scripts/index.js`.
   `styles/tokens.css` loads first and everything else is written against it —
   no literal colours, spacing or font sizes outside that file. The Overlay
@@ -127,6 +128,19 @@ matters** — `/shared` and the helper modules first, `index.js` last.
 - **Closing the window doesn't quit.** It hides to tray so the server stays up
   for OBS. Real shutdown goes through `gracefulShutdown()`.
 - **Single-instance lock** is on; a second launch focuses the existing window.
+- **`autoInstallOnAppQuit` can never work here.** electron-updater hangs it on
+  Electron's `quit` event, and `gracefulShutdown()` ends with `process.exit(0)`
+  — deliberately, so a wedged OBS keep-alive socket can't hang the exit — so
+  `quit` never fires. `updater.js` sets the flag to `false` rather than leaving
+  a lie in the code. The Support page's "Restart & install" button is the only
+  install path, which is also what we want: this app is on screen in front of a
+  live audience and must never relaunch itself. `quitAndInstall()` is safe
+  against the hard exit because electron-updater spawns the installer detached
+  *before* asking the app to quit.
+- **macOS can't auto-update.** Squirrel.Mac refuses to install over an unsigned
+  app and these builds are unsigned on purpose. `updater.js` keys off
+  `process.platform !== 'darwin'` and degrades to a "download it yourself" link
+  rather than failing silently.
 
 ## Testing
 

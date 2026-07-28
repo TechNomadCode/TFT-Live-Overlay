@@ -171,6 +171,43 @@
   flex-direction: column;
   gap: var(--s2);
 }
+
+/* Warm, so it reads as an offer rather than as another control. It is the one
+   thing in this rail that isn't cyan, which is the whole point -- everything
+   else here is app chrome. */
+.donate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 32px;
+  border-radius: var(--r-md);
+  background: rgba(255,180,84,0.10);
+  border: 1px solid rgba(255,180,84,0.30);
+  color: var(--warn);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.donate:hover {
+  background: rgba(255,180,84,0.18);
+  border-color: rgba(255,180,84,0.5);
+}
+.donate svg { width: 14px; height: 14px; }
+
+.made-by {
+  font-size: 10.5px;
+  color: var(--faint);
+  text-align: center;
+}
+.made-by a {
+  color: var(--muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+.made-by a:hover { color: var(--cyan); text-decoration: underline; }
 .quit {
   display: flex;
   align-items: center;

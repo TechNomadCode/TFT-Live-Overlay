@@ -17,7 +17,14 @@ contextBridge.exposeInMainWorld('tftApp', {
   getRegionMap: () => ipcRenderer.invoke('get-region-map'),
   revealLog: () => ipcRenderer.invoke('reveal-log'),
   copyDiagnostics: () => ipcRenderer.invoke('copy-diagnostics'),
+  getAppInfo: () => ipcRenderer.invoke('get-app-info'),
+  getUpdateStatus: () => ipcRenderer.invoke('get-update-status'),
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
   onStatusUpdate: (callback) => {
     ipcRenderer.on('status-update', (event, status) => callback(status));
+  },
+  onUpdateStatus: (callback) => {
+    ipcRenderer.on('update-status', (event, status) => callback(status));
   },
 });

@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="styles/sidebar.css" />
 <link rel="stylesheet" href="styles/controls.css" />
 <link rel="stylesheet" href="styles/preview.css" />
+<link rel="stylesheet" href="styles/support.css" />
 </head>
 <body>
 
@@ -48,9 +49,24 @@
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.4"/><path d="M6.2 6.1a1.85 1.85 0 013.6.6c0 1.2-1.8 1.5-1.8 2.7"/><circle cx="8" cy="11.6" r="0.75" fill="currentColor" stroke="none"/></svg>
         Help
       </button>
+      <button class="nav-item" data-page="support" id="navSupport">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M8 13.4S2.2 10.1 2.2 6.3A2.9 2.9 0 018 4.7a2.9 2.9 0 015.8 1.6c0 3.8-5.8 7.1-5.8 7.1z"/></svg>
+        Support
+        <span class="pip"></span>
+      </button>
     </nav>
 
     <div class="side-foot">
+      <!-- Pinned here rather than only on the Support page: this is free
+           software with no other funding route, and a link nobody ever
+           navigates to may as well not exist. -->
+      <a class="donate" id="donateSide" href="#">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.6 6.2h8.2v4a2.8 2.8 0 01-2.8 2.8H5.4a2.8 2.8 0 01-2.8-2.8z"/><path d="M10.8 7.2h1.3a1.7 1.7 0 010 3.4h-1.3"/><path d="M5 4.2V2.8M8 4.2V2.8"/></svg>
+        Buy me a coffee
+      </a>
+      <div class="made-by">
+        Made by <a href="#" id="authorLink">TechNomadCode</a>
+      </div>
       <button class="quit" id="quitBtn">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 2.2v5.4"/><path d="M12.1 4.3a5.2 5.2 0 11-8.2 0"/></svg>
         Quit
@@ -255,6 +271,69 @@
         </div>
       </section>
 
+      <!-- -------- SUPPORT -------- -->
+      <section id="page-support" class="page">
+        <div class="page-head">
+          <h1 class="page-title">Support</h1>
+          <p class="page-sub">Who made this, and how to keep it going.</p>
+        </div>
+
+        <div class="card support-card">
+          <div class="support-lead">
+            <img class="support-avatar" src="../../assets/icon-256.png" alt="" />
+            <div>
+              <div class="support-title">TFT Live Overlay is free, and always will be.</div>
+              <p class="support-body">
+                It's built and maintained by <strong>TechNomadCode</strong> in their
+                spare time. There's no company behind it, no account to sign up for
+                and nothing tracking you. If it earned its place on your stream,
+                a coffee goes a long way.
+              </p>
+            </div>
+          </div>
+          <div class="btn-row">
+            <a class="btn donate-btn" id="donateBtn" href="#">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.6 6.2h8.2v4a2.8 2.8 0 01-2.8 2.8H5.4a2.8 2.8 0 01-2.8-2.8z"/><path d="M10.8 7.2h1.3a1.7 1.7 0 010 3.4h-1.3"/><path d="M5 4.2V2.8M8 4.2V2.8"/></svg>
+              Buy me a coffee
+            </a>
+            <a class="btn" id="repoBtn" href="#">Star on GitHub</a>
+            <a class="btn" id="issueBtn" href="#">Report a problem</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Updates</div>
+            <button class="btn small" id="checkUpdateBtn">Check now</button>
+          </div>
+          <div class="update-row">
+            <span class="dot" id="updateDot"></span>
+            <div class="update-text">
+              <div class="update-state" id="updateState">Checking&hellip;</div>
+              <div class="update-sub" id="updateSub"></div>
+            </div>
+            <button class="btn primary" id="installUpdateBtn" style="display:none;">Restart &amp; install</button>
+            <a class="btn" id="downloadUpdateBtn" href="#" style="display:none;">Download</a>
+          </div>
+          <div class="progress" id="updateProgress" style="display:none;">
+            <div class="progress-fill" id="updateProgressFill"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">About</div>
+          <dl class="about-list">
+            <dt>Version</dt><dd id="aboutVersion">&mdash;</dd>
+            <dt>Licence</dt><dd>MIT &mdash; free to use, modify and share</dd>
+            <dt>Source</dt><dd><a href="#" id="aboutRepoLink">github.com/TechNomadCode/TFT-Live-Overlay</a></dd>
+          </dl>
+          <p class="hint">
+            Not affiliated with or endorsed by Riot Games. Teamfight Tactics and
+            Riot Games are trademarks of Riot Games, Inc.
+          </p>
+        </div>
+      </section>
+
     </div>
   </main>
 
@@ -271,6 +350,7 @@
 <script src="scripts/diagnostics.js"></script>
 <script src="scripts/settings-form.js"></script>
 <script src="scripts/test-panel.js"></script>
+<script src="scripts/support.js"></script>
 <script src="scripts/status-view.js"></script>
 <script src="scripts/index.js"></script>
 </body>

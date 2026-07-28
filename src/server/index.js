@@ -123,6 +123,12 @@ function createOverlayServer({ onStatusChange, log, logDir } = {}) {
     diagnosticsPath: diag.path,
     readDiagnostics: diag.read,
 
+    // The resolved sink, so main-process code outside this module (the updater)
+    // can write to the same file. That file exists to be sent to us when
+    // something goes wrong on a machine we don't have, and "the update failed"
+    // is exactly such a report.
+    log,
+
     start(port) {
       return new Promise((resolve, reject) => {
         httpServer = app.listen(port, () => {

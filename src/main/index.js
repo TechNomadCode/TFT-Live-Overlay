@@ -12,11 +12,13 @@ const { createTray } = require('./windows/tray');
 const { registerIpcHandlers } = require('./ipc');
 const { loadSettings } = require('./settings-store');
 const { settingsToServerConfig } = require('./regions');
+const { createUpdater } = require('./updater');
 const { createOverlayServer } = require('../server');
 
 let mainWindow = null;
 let tray = null;
 let overlayServer = null;
+let updater = null;
 let isQuitting = false;
 let isShuttingDown = false;
 
@@ -45,13 +47,18 @@ function requestQuit() {
   app.quit();
 }
 
+// The window is hidden to tray, not destroyed, so it is normally still there to
+// receive these -- but it genuinely can be gone (macOS window-all-closed), and a
+// send to a destroyed webContents throws.
+function sendToRenderer(channel, payload) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(channel, payload);
+  }
+}
+
 async function startOverlayServer() {
   overlayServer = createOverlayServer({
-    onStatusChange: (status) => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('status-update', status);
-      }
-    },
+    onStatusChange: (status) => sendToRenderer('status-update', status),
     // A packaged app has no console anyone will ever see, which is why the first
     // report of the overlay not animating came with no evidence at all. The
     // server resolves nothing about this path itself -- src/server must stay
@@ -88,8 +95,22 @@ if (gotSingleInstanceLock) {
 
     mainWindow = createMainWindow({ isQuitting: () => isQuitting });
     tray = createTray({ onOpenSettings: showMainWindow, onQuit: requestQuit });
-    registerIpcHandlers({ getOverlayServer: () => overlayServer, requestQuit });
-    await startOverlayServer();
+    registerIpcHandlers({
+      getOverlayServer: () => overlayServer,
+      getUpdater: () => updater,
+      requestQuit,
+    });
+
+    const serverStarted = await startOverlayServer();
+    if (!serverStarted) return;
+
+    // After the server, so update failures can be written to the same
+    // overlay.log users already send us when something goes wrong.
+    updater = createUpdater({
+      onStatus: (status) => sendToRenderer('update-status', status),
+      log: overlayServer.log,
+    });
+    updater.start();
   });
 }
 
@@ -128,6 +149,10 @@ async function gracefulShutdown() {
   // be holding a keep-alive connection open when we're asked to quit.
   const watchdog = setTimeout(() => process.exit(0), 3000);
   if (watchdog.unref) watchdog.unref();
+
+  try {
+    if (updater) updater.stop();
+  } catch { /* shutting down anyway */ }
 
   try {
     if (overlayServer) await overlayServer.stop();

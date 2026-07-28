@@ -1,0 +1,104 @@
+/* The Support page: credit, the donate ask, and the update controls.
+ *
+ * The donate ask is the only place in the app that is allowed to look like a
+ * pitch, so it gets a warm tint and the app icon rather than the flat card
+ * treatment every other panel uses. Everything else here stays deliberately
+ * plain -- an update control that shouts is an update control people distrust. */
+
+.support-card {
+  background:
+    linear-gradient(180deg, rgba(255,180,84,0.055), transparent 60%),
+    var(--surface);
+  border-color: rgba(255,180,84,0.16);
+}
+
+.support-lead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s4);
+}
+.support-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-lg);
+  flex-shrink: 0;
+}
+.support-title {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  letter-spacing: 0.1px;
+}
+.support-body {
+  margin: 6px 0 0;
+  font-size: var(--fs-md);
+  line-height: 1.6;
+  color: var(--dim);
+}
+.support-body strong { color: var(--text); font-weight: 600; }
+
+.btn.donate-btn {
+  background: linear-gradient(180deg, #ffc470, #f0a53c);
+  border-color: #e0972f;
+  color: #2a1a05;
+  font-weight: 700;
+}
+.btn.donate-btn:hover { background: linear-gradient(180deg, #ffd08a, #f5b154); }
+.btn.donate-btn:active { background: linear-gradient(180deg, #f7b95e, #e59b31); }
+
+/* ---- updates ---- */
+.update-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+.update-text {
+  flex: 1;
+  min-width: 0;
+}
+.update-state {
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+.update-sub {
+  margin-top: 2px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.update-sub:empty { display: none; }
+
+.progress {
+  margin-top: var(--s3);
+  height: 5px;
+  border-radius: 3px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--cyan-deep), var(--cyan));
+  transition: width 0.3s ease;
+}
+
+/* ---- about ---- */
+.about-list {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 7px var(--s3);
+  margin: 0;
+  font-size: var(--fs-md);
+}
+.about-list dt {
+  color: var(--muted);
+  font-weight: 600;
+}
+.about-list dd {
+  margin: 0;
+  color: var(--dim);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.about-list a { color: var(--cyan); text-decoration: none; }
+.about-list a:hover { text-decoration: underline; }

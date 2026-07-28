@@ -2,7 +2,7 @@
 // one-for-one counterpart in src/preload/index.js -- adding a renderer
 // capability means adding it in both places, and nowhere else.
 
-const { ipcMain, shell, clipboard } = require('electron');
+const { app, ipcMain, shell, clipboard } = require('electron');
 
 const { overlayUrl } = require('./constants');
 const { REGION_MAP, settingsToServerConfig } = require('./regions');
@@ -11,9 +11,10 @@ const { loadSettings, saveSettings } = require('./settings-store');
 /**
  * @param {object} deps
  * @param {function} deps.getOverlayServer - the running server instance
+ * @param {function} deps.getUpdater - the updater, or null before the server is up
  * @param {function} deps.requestQuit
  */
-function registerIpcHandlers({ getOverlayServer, requestQuit }) {
+function registerIpcHandlers({ getOverlayServer, getUpdater, requestQuit }) {
   ipcMain.handle('get-settings', () => loadSettings());
 
   // Merge rather than replace. The renderer builds this object from the form
@@ -59,6 +60,31 @@ function registerIpcHandlers({ getOverlayServer, requestQuit }) {
     if (!text) return { ok: false };
     clipboard.writeText(text);
     return { ok: true };
+  });
+
+  ipcMain.handle('get-app-info', () => ({
+    name: app.getName(),
+    version: app.getVersion(),
+    platform: process.platform,
+    isPackaged: app.isPackaged,
+  }));
+
+  // The updater is built after the server binds, so the Support page can load
+  // before it exists. A null status is the renderer's cue to say "checking"
+  // rather than to render an empty card.
+  ipcMain.handle('get-update-status', () => {
+    const updater = getUpdater();
+    return updater ? updater.getStatus() : null;
+  });
+
+  ipcMain.handle('check-for-updates', () => {
+    const updater = getUpdater();
+    return updater ? updater.check() : null;
+  });
+
+  ipcMain.handle('install-update', () => {
+    const updater = getUpdater();
+    return { ok: !!updater && updater.install() };
   });
 
   ipcMain.handle('quit-app', () => requestQuit());
