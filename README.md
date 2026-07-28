@@ -11,6 +11,8 @@
 [![Windows · macOS · Linux](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-lightgrey)](#install)
 [![OBS · Streamlabs](https://img.shields.io/badge/OBS%20%C2%B7%20Streamlabs-Browser%20Source-302E31)](#add-it-to-obs--streamlabs)
 
+<img src="docs/app-view.jpg" width="800" alt="The overlay card at Diamond I taking a first place: the placement strip shifts, the LP figure rolls from 45 to 83 and the bar closes on Master">
+
 <img src="docs/overlay-live.gif" width="406" alt="The overlay card at Diamond I taking a first place: the placement strip shifts, the LP figure rolls from 45 to 83 and the bar closes on Master">
 
 <sub>A won game landing. Captured from the real overlay — not a mockup.</sub>
@@ -26,7 +28,7 @@ ID, add one Browser Source, done.
 
 ## Install
 
-Prebuilt installers are available for Windows, MacOS and Linux. (Latest Release: v1.3.0)
+[Prebuilt installers](https://github.com/TechNomadCode/TFT-Live-Overlay/releases/latest) are available for Windows, MacOS and Linux. 
 
 <details>
 <summary><b>Your OS says the app is unrecognised or can't be opened</b></summary>
