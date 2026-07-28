@@ -26,14 +26,7 @@ ID, add one Browser Source, done.
 
 ## Install
 
-Prebuilt installers (Windows, macOS Apple Silicon/Intel, Linux) are temporarily
-unavailable while a GitHub Support ticket on this account is resolved. Until
-then, run it from source — see [Development](#development) below; it's an
-`npm install` and `npm start` away.
-
-Once installers are back: settings live in your OS app-data folder rather than
-next to the app, so installing a new version over the top keeps your Riot ID,
-region and API key — and uninstalling leaves them alone.
+Prebuilt installers are available for Windows, MacOS and Linux. (Latest Release: v1.3.0)
 
 <details>
 <summary><b>Your OS says the app is unrecognised or can't be opened</b></summary>
