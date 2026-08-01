@@ -4,14 +4,14 @@
 
 # TFT Live Overlay
 
-**Your Teamfight Tactics rank, LP swings and recent placements on stream — straight from the Riot API.**
+**Your Teamfight Tactics rank, LP swings and recent placements on stream — straight from the Riot API. Ranked and Double Up.**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Electron 43](https://img.shields.io/badge/Electron-43-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![Windows · macOS · Linux](https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-lightgrey)](#install)
 [![OBS · Streamlabs](https://img.shields.io/badge/OBS%20%C2%B7%20Streamlabs-Browser%20Source-302E31)](#add-it-to-obs--streamlabs)
 
-<img src="docs/app-view.jpg" width="800" alt="The overlay card at Diamond I taking a first place: the placement strip shifts, the LP figure rolls from 45 to 83 and the bar closes on Master">
+<img src="docs/app-view.jpg" width="800" alt="The app window on the Overlay page: the sidebar shows a live Diamond IV at 12 LP, a Ladder control switches between Ranked and Double Up, and the live preview below it renders the real overlay card">
 
 <img src="docs/overlay-live.gif" width="406" alt="The overlay card at Diamond I taking a first place: the placement strip shifts, the LP figure rolls from 45 to 83 and the bar closes on Master">
 
@@ -53,6 +53,7 @@ systems simply don't recognise the publisher.
    Personal keys expire every 24h — paste a fresh one in the same box when that
    happens, no restart needed.
 3. **Save changes.** Takes effect immediately.
+4. **Overlay** → pick the **Ladder** you want on screen: Ranked or Double Up.
 
 ## Add it to OBS / Streamlabs
 
@@ -84,6 +85,7 @@ overlay in an iframe, not an approximation: what you see there is what OBS draws
 | **Progress bar** | LP to the next tier. Dropped at Master+, where promotion is population-gated rather than an LP target. |
 | **Placement strip** | Last 5 finishes, newest first. Tonal, so it never competes with the LP readout. |
 | **Rank moments** | A division change gets a 1s accent. A tier change gets the full takeover. |
+| **Either ladder** | Ranked or Double Up, switched from the Overlay page. |
 
 Every tier gets its own material, not a hue rotation of one card: Grandmaster is
 bladed crimson steel with a hard fast glint, Challenger is engraved gold with no
@@ -109,6 +111,18 @@ in one visible frame.
 
 </div>
 
+### Double Up
+
+Double Up has its own ranked ladder, and the card handles it as a first-class
+mode rather than a variant: same tiers, same materials, same LP bar, same
+promotion takeover. Pick it under **Overlay → Ladder**.
+
+Both ladders are tracked the whole time, so switching is instant and neither one
+loses its session totals or its placement strip while you're on the other. The
+strip counts **teams, 1st to 4th** — Riot's API reports Double Up on the
+eight-player scale, where the winning pair holds places 1 and 2, so a raw "2"
+would read as a second place to your viewers when you actually won.
+
 ## How it works
 
 ```mermaid
@@ -116,7 +130,7 @@ flowchart LR
   R["Riot API"] -->|"every 5s"| S["Express :3000<br/>poll loop · trackers · crest proxy"]
   S -->|"GET /api/rank · every 2.5s"| O["overlay.html"]
   O --> B["OBS / Streamlabs<br/>Browser Source"]
-  W["App window<br/>settings · preview · practice"] <-->|"IPC · live config"| S
+  W["App window<br/>settings · preview · test"] <-->|"IPC · live config"| S
 ```
 
 Two poll loops at different rates, deliberately: server → Riot is
@@ -133,6 +147,14 @@ A few decisions worth the detour:
   composites it, then OBS captures *that* — and alpha-transparent window capture
   is famously dependent on capture method and GPU driver. So the app is a GUI in
   front of a local HTTP server, not a window to point OBS at.
+
+- **Both ladders are tracked at once, because the second one is free.** Riot
+  returns every queue's league entry in a single response, so polling Double Up
+  alongside ranked costs no extra request — and the match documents that fill
+  the placement strip already had to be fetched before their queue could be
+  read, so Double Up games were being downloaded and thrown away. Switching
+  ladders is therefore a read-side choice: no refetch, no reset, and each keeps
+  its own session.
 
 - **A poll is two awaited round-trips, so it can outlive its own config.**
   Saving a new Riot ID mid-flight let the old identity's 404 land afterwards and
@@ -180,7 +202,7 @@ src/
 ├── shared/     tier + LP domain logic, loadable from Node and the browser alike
 ├── main/       Electron main process: lifecycle, tray, window, settings, IPC
 ├── preload/    the contextBridge surface (window.tftApp)
-├── renderer/   the app window — Overlay, Account, Practice, Help
+├── renderer/   the app window — Overlay, Account, Test, Help
 ├── overlay/    overlay.html and its styles/scripts — what OBS loads
 └── server/     Express + Riot polling, split into riot/, tracking/, crest/, routes/
 ```
@@ -188,7 +210,7 @@ src/
 Closing the window hides it to tray; the server stays up so OBS never loses
 connection. Quit properly from the sidebar or the tray icon.
 
-There's no automated test suite. The **Practice** page (`POST /api/test/event`)
+There's no automated test suite. The **Test** page (`POST /api/test/event`)
 drives mock rank and LP changes through the real code paths without spending API
 quota — that's how every overlay state gets exercised. `src/server` has no
 Electron dependency, so it also runs under plain Node:
@@ -233,6 +255,10 @@ real server, not a hand-built mockup — a mockup drifts from the app immediatel
 npx electron docs/_gif-build/capture.js   # frames + docs/overlay-tiers.png
 node docs/_gif-build/encode.js            # the two GIFs
 ```
+
+`docs/app-view.jpg` is the exception — it's a screenshot of the whole app
+window, title bar included, so it isn't part of that pipeline. Retake it by hand
+whenever the window's chrome changes.
 
 See [`docs/_gif-build/gif-capture.md`](docs/_gif-build/gif-capture.md) for the
 multi-pass capture scheme and the gotchas it exists to work around.

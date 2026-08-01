@@ -6,7 +6,7 @@
 // the same thing the Riot dev-portal link on Account relies on.
 //
 // This module also owns the Support nav pip, for the same reason status-view.js
-// owns the Practice one: the module holding the data source flags its own nav
+// owns the Test one: the module holding the data source flags its own nav
 // item. Update state arrives on its own IPC channel and has nothing else to do
 // with rank status.
 
@@ -113,7 +113,7 @@
     el('checkUpdateBtn').disabled =
       status.state === 'checking' || status.state === 'downloading' || status.state === 'dev';
 
-    // Visible from any page, the same way practice mode is -- an update that
+    // Visible from any page, the same way test mode is -- an update that
     // finished downloading is worth noticing before the next stream, not on the
     // next accidental visit to this page.
     el('navSupport').classList.toggle('flagged', status.state === 'ready' || status.state === 'manual');

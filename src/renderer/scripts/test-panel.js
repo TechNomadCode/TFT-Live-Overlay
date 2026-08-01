@@ -1,9 +1,25 @@
-// The Practice page. There is no automated test suite; this panel plus
+// The Test page. There is no automated test suite; this panel plus
 // POST /api/test/* is how overlay code paths get exercised without waiting on a
 // real match or spending API quota.
 
-(function (ns, Tiers) {
+(function (ns, Tiers, Modes) {
   'use strict';
+
+  // A Double Up lobby is four pairs, and the server folds Riot's raw 1..8
+  // participant placement into that 1..4 team placement before anything sees
+  // it. So the test buttons have to move with the ladder too, or they'd
+  // simulate a 5th place in a mode that has no 5th.
+  function syncLadderButtons(mode) {
+    const active = Modes.coerceMode(mode);
+    document.querySelectorAll('.btn-grid[data-mode]').forEach((grid) => {
+      grid.style.display = grid.dataset.mode === active ? '' : 'none';
+    });
+    const hint = document.getElementById('testLadderHint');
+    if (hint) {
+      hint.textContent = `Simulates a finish on the ${Modes.MODE_META[active].label} ladder`
+        + ` — change it on the Overlay page.`;
+    }
+  }
 
   function forceMockToggleOn() {
     // Any simulated event switches the server into mock mode server-side, so
@@ -26,6 +42,11 @@
     const tierSelect = document.getElementById('testTier');
     tierSelect.addEventListener('change', syncDivisionAvailability);
     syncDivisionAvailability();
+
+    // Both: the immediate call covers the default before settings have loaded,
+    // the subscription covers the saved value landing and every later switch.
+    syncLadderButtons(ns.gameMode());
+    ns.onModeChange(syncLadderButtons);
 
     document.querySelectorAll('.btn[data-lp]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -50,7 +71,7 @@
     });
 
     document.getElementById('triggerErrorBtn').addEventListener('click', () => {
-      ns.postTestEvent('error', { errorMsg: 'Example error, triggered from the Practice page.' });
+      ns.postTestEvent('error', { errorMsg: 'Example error, triggered from the Test page.' });
     });
     document.getElementById('clearErrorBtn').addEventListener('click', () => ns.postTestEvent('reset_error'));
     document.getElementById('resetSessionBtn').addEventListener('click', () => ns.postTestEvent('reset_session'));
@@ -59,13 +80,13 @@
       window.tftApp.setMockMode(e.target.checked);
     });
 
-    // The banner on the Overlay page is the one place practice mode is visible
+    // The banner on the Overlay page is the one place test mode is visible
     // without navigating to it, so it gets its own way out.
-    document.getElementById('practiceOffBtn').addEventListener('click', () => {
+    document.getElementById('testOffBtn').addEventListener('click', () => {
       window.tftApp.setMockMode(false);
       document.getElementById('mockToggle').checked = false;
     });
   }
 
   ns.initTestPanel = init;
-}(window.TFTSettings = window.TFTSettings || {}, window.TFT.Tiers));
+}(window.TFTSettings = window.TFTSettings || {}, window.TFT.Tiers, window.TFT.Modes));

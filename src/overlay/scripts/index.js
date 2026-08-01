@@ -13,6 +13,7 @@
 
   let lastSeenDeltaSeq = null;
   let lastTier = null;
+  let lastMode = null;
 
   // ?scale=1.5 renders the whole card larger. This is not the same as resizing
   // the Browser Source in OBS: that stretches an already-rendered 370x108
@@ -33,6 +34,19 @@
   }
 
   function render(data) {
+    // A ladder switch replaces every tracked value at once with the other
+    // ladder's, which is not a match result and must not be animated like one.
+    // Re-baselining here suppresses the phantom LP trend marker (the two
+    // ladders keep independent delta sequences, so the new one's number always
+    // looks "unseen") and drops lastTier so the chrome swaps immediately
+    // instead of waiting on a flare that is never going to fire.
+    // checkRankChange gets told separately -- it owns its own history.
+    if (lastMode !== null && data.mode !== lastMode) {
+      lastSeenDeltaSeq = data.deltaSeq;
+      lastTier = null;
+    }
+    lastMode = data.mode;
+
     // Before any tier-derived rendering: a card that has never had data drops
     // to a passive treatment rather than showing a zeroed-out live card, which
     // read as broken on stream.
@@ -41,7 +55,7 @@
 
     ns.renderIdentity(data);
     ns.renderRank(data);
-    ns.renderPlacements(data.recentPlacements || []);
+    ns.renderPlacements(data.recentPlacements || [], data.mode);
     ns.renderGoal(data);
     ns.renderFooterBand(data.error, pending);
 
@@ -57,7 +71,7 @@
 
     // checkRankChange first, so the takeover is already on screen before the
     // card's material changes underneath it.
-    ns.checkRankChange(data.tier, data.rank, !!data.isMockMode);
+    ns.checkRankChange(data.tier, data.rank, !!data.isMockMode, data.mode);
 
     // A tier change is the one case where the chrome must NOT update
     // immediately: the flare peaks a third of a second in, and swapping the

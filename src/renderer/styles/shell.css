@@ -55,7 +55,7 @@
   color: var(--muted);
 }
 
-/* A card whose title sits opposite a control (the practice-mode switch). */
+/* A card whose title sits opposite a control (the test-mode switch). */
 .card-head {
   display: flex;
   align-items: center;
@@ -71,7 +71,7 @@
   gap: var(--s4);
 }
 
-/* Standing notice at the top of a page -- practice mode, and errors. */
+/* Standing notice at the top of a page -- test mode, and errors. */
 .banner {
   display: flex;
   align-items: center;

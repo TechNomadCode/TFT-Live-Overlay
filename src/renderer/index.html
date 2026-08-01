@@ -40,9 +40,9 @@
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="5.6" r="2.8"/><path d="M2.6 13.6c0-2.6 2.4-4.2 5.4-4.2s5.4 1.6 5.4 4.2"/></svg>
         Account
       </button>
-      <button class="nav-item" data-page="practice" id="navPractice">
+      <button class="nav-item" data-page="test" id="navTest">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.4"/><path d="M6.6 5.6l4 2.4-4 2.4z" fill="currentColor" stroke="none"/></svg>
-        Practice
+        Test
         <span class="pip"></span>
       </button>
       <button class="nav-item" data-page="help">
@@ -86,17 +86,30 @@
           <p class="page-sub">What your viewers see.</p>
         </div>
 
-        <div class="banner warn" id="practiceBanner" style="display:none;">
+        <div class="banner warn" id="testBanner" style="display:none;">
           <span class="dot warn"></span>
           <div class="banner-text">
-            <b>Practice mode is on.</b> The card is showing test data, not your real rank.
+            <b>Test mode is on.</b> The card is showing test data, not your real rank.
           </div>
-          <button class="btn small" id="practiceOffBtn">Turn off</button>
+          <button class="btn small" id="testOffBtn">Turn off</button>
         </div>
 
         <div class="banner error" id="errorBanner" style="display:none;">
           <span class="dot error"></span>
           <div class="banner-text"><b>Something went wrong.</b> <span id="errorText"></span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Ladder</div>
+          <select class="input" id="gameMode">
+            <option value="ranked">Ranked</option>
+            <option value="doubleup">Double Up</option>
+          </select>
+          <p class="hint">
+            Which ladder the card shows. Both are tracked at the same time, so
+            switching is instant and neither one loses its session totals or its
+            placements.
+          </p>
         </div>
 
         <div class="card">
@@ -181,16 +194,16 @@
         </div>
       </section>
 
-      <!-- -------- PRACTICE -------- -->
-      <section id="page-practice" class="page">
+      <!-- -------- TEST -------- -->
+      <section id="page-test" class="page">
         <div class="page-head">
-          <h1 class="page-title">Practice</h1>
+          <h1 class="page-title">Test</h1>
           <p class="page-sub">See how the card behaves without playing a game.</p>
         </div>
 
         <div class="card">
           <div class="card-head">
-            <div class="card-title">Practice mode</div>
+            <div class="card-title">Test mode</div>
             <label class="switch">
               <input type="checkbox" id="mockToggle" />
               <span class="slider"></span>
@@ -202,14 +215,24 @@
           </p>
         </div>
 
+        <!-- One grid per ladder: a Double Up lobby is four pairs, so its finishes
+             run 1st-4th and 2nd is a win, not a mid-table result. Only the grid
+             matching the selected ladder is shown — see scripts/test-panel.js. -->
         <div class="card">
           <div class="card-title">Finish a game</div>
-          <div class="btn-grid">
+          <div class="btn-grid" data-mode="ranked">
             <button class="btn win" data-lp="38" data-placement="1">1st &nbsp;+38 LP</button>
             <button class="btn win" data-lp="18" data-placement="3">3rd &nbsp;+18 LP</button>
             <button class="btn loss" data-lp="-14" data-placement="5">5th &nbsp;&minus;14 LP</button>
             <button class="btn loss" data-lp="-32" data-placement="8">8th &nbsp;&minus;32 LP</button>
           </div>
+          <div class="btn-grid" data-mode="doubleup">
+            <button class="btn win" data-lp="42" data-placement="1">1st &nbsp;+42 LP</button>
+            <button class="btn win" data-lp="20" data-placement="2">2nd &nbsp;+20 LP</button>
+            <button class="btn loss" data-lp="-20" data-placement="3">3rd &nbsp;&minus;20 LP</button>
+            <button class="btn loss" data-lp="-38" data-placement="4">4th &nbsp;&minus;38 LP</button>
+          </div>
+          <p class="hint" id="testLadderHint"></p>
         </div>
 
         <div class="card">
@@ -343,9 +366,11 @@
      Chromium blocks module scripts on CORS grounds. Order matters — shared and
      bridge first, index.js (which calls every init) last. -->
 <script src="../shared/tiers.js"></script>
+<script src="../shared/modes.js"></script>
 <script src="scripts/bridge.js"></script>
 <script src="scripts/nav.js"></script>
 <script src="scripts/overlay-link.js"></script>
+<script src="scripts/mode-switch.js"></script>
 <script src="scripts/preview.js"></script>
 <script src="scripts/diagnostics.js"></script>
 <script src="scripts/settings-form.js"></script>

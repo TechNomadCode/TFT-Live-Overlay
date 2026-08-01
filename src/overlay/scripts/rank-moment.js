@@ -20,6 +20,7 @@
   let lastTier = null;
   let lastRankScore = null;
   let lastMockMode = null;
+  let lastMode = null;
   let momentTimeouts = [];
 
   // Cancels an in-flight moment AND undoes its state. Dropping the timeouts
@@ -89,7 +90,7 @@
     });
   }
 
-  /** Kept for the Practice page, which drives a takeover directly. */
+  /** Kept for the Test page, which drives a takeover directly. */
   function showRankMoment(isUp, tier, rank) {
     clearMoment();
     showTierMoment(isUp, tier, rank);
@@ -97,15 +98,22 @@
 
   // Fires only on a genuine ladder move. Deliberately skipped on the first
   // sighting of any rank (otherwise launching the app would announce a
-  // promotion to wherever you already are) and on the poll where mock mode
-  // flips, since that snaps the rank between simulated and real values.
-  function checkRankChange(tier, rank, isMock) {
+  // promotion to wherever you already are), on the poll where mock mode flips,
+  // and on the poll where the ladder itself changes -- all three snap the rank
+  // between two unrelated values rather than moving along one ladder.
+  //
+  // The mode guard matters most of the three: the two ladders are ranked
+  // independently, so switching from Diamond on ranked to Emerald on Double Up
+  // is an ordinary click that would otherwise put "Demoted EMERALD" on stream.
+  function checkRankChange(tier, rank, isMock, mode) {
     const score = Tiers.rankScore(tier, rank);
     const mockFlipped = lastMockMode !== null && lastMockMode !== isMock;
+    const modeChanged = lastMode !== null && lastMode !== mode;
     lastMockMode = isMock;
+    lastMode = mode;
 
     if (score === null) { lastRankScore = null; lastTier = null; return; }
-    if (lastRankScore === null || mockFlipped) {
+    if (lastRankScore === null || mockFlipped || modeChanged) {
       lastRankScore = score;
       lastTier = tier;
       return;

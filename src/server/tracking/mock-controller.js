@@ -12,54 +12,61 @@
 // change re-locks it against FABRICATED LP. Returning to live then computed
 // sessionLP as (real absolute LP - mock absolute LP), which can be thousands of
 // LP off on stream.
+//
+// Events land on whichever mode is currently selected, but the snapshot covers
+// *every* ladder: switching mode mid-session is one click, and restoring only
+// the mode that happened to be selected at toggle-off would strand simulated
+// values on the other one.
 
 const { getAbsoluteLP, applyLPChange } = require('../../shared/lp-math');
-
-const TFT_LOBBY_SIZE = 8;
-
-function isValidPlacement(p) {
-  return typeof p === 'number' && p >= 1 && p <= TFT_LOBBY_SIZE;
-}
+const Modes = require('../../shared/modes');
 
 /**
  * @param {object} deps
- * @param {object} deps.state - tracker state
+ * @param {object} deps.ladders - tracker state per mode, keyed by mode name
  * @param {object} deps.placements
+ * @param {function} deps.getMode - the mode the app is currently displaying
  * @param {function} deps.log
  */
-function createMockController({ state, placements, log }) {
+function createMockController({ ladders, placements, getMode, log }) {
   let enabled = false;
   let preMockState = null;
+
+  const activeMode = () => Modes.coerceMode(getMode());
+  const activeState = () => ladders[activeMode()];
 
   function isEnabled() { return enabled; }
 
   function setEnabled(next) {
     if (next && !enabled) {
-      preMockState = {
-        tracker: state.snapshot(),
-        placements: placements.snapshot(),
-      };
+      const trackers = {};
+      for (const mode of Modes.MODES) trackers[mode] = ladders[mode].snapshot();
+      preMockState = { trackers, placements: placements.snapshot() };
       placements.cancelCatchup();
     } else if (!next && enabled && preMockState) {
       // Restoring the displayed values too means the overlay snaps straight
       // back to real rank on toggle-off, instead of showing simulated rank
       // until the next poll lands.
-      state.restore(preMockState.tracker);
+      for (const mode of Modes.MODES) ladders[mode].restore(preMockState.trackers[mode]);
       placements.restore(preMockState.placements);
       preMockState = null;
-      state.syncPlacements();
+      for (const mode of Modes.MODES) ladders[mode].syncPlacements();
     }
     enabled = next;
   }
 
   /**
-   * Applies one Test-tab event. Turns mock mode on as a side effect -- a
-   * simulated result must never be allowed to land on live state.
+   * Applies one Test-page event to the selected mode. Turns mock mode on as
+   * a side effect -- a simulated result must never be allowed to land on live
+   * state.
    * @param {object} event - the /api/test/event body
    */
   function applyEvent(event) {
     const { action, lpChange, newTier, newRank, errorMsg, placement } = event;
     setEnabled(true);
+
+    const state = activeState();
+    const mode = activeMode();
 
     if (!state.baseline) {
       const { tier, rank, leaguePoints, wins, losses } = state.data;
@@ -67,16 +74,16 @@ function createMockController({ state, placements, log }) {
     }
 
     if (action === 'lp_change') {
-      applyLpChangeEvent(lpChange, placement);
+      applyLpChangeEvent(state, mode, lpChange, placement);
     } else if (action === 'set_rank') {
-      applySetRankEvent(newTier, newRank);
+      applySetRankEvent(state, newTier, newRank);
     } else if (action === 'error') {
       state.data.error = errorMsg || 'Simulated Test Error!';
     } else if (action === 'reset_error') {
       state.data.error = null;
     } else if (action === 'reset_session') {
       state.baseline = null;
-      placements.clearSession();
+      placements.clearSession(mode);
       state.data.sessionLP = 0;
       state.data.sessionWins = 0;
       state.data.sessionLosses = 0;
@@ -88,9 +95,12 @@ function createMockController({ state, placements, log }) {
     state.touch();
   }
 
-  function applyLpChangeEvent(lpChange, placement) {
+  function applyLpChangeEvent(state, mode, lpChange, placement) {
     const { tier, rank, leaguePoints } = state.data;
     const beforeAbsLP = getAbsoluteLP(tier, rank, leaguePoints);
+    // Both ladders share the same LP arithmetic -- Double Up is the same
+    // metallic ladder with the same 100 LP divisions -- so this needs no mode
+    // awareness. Only what counts as a win does.
     const result = applyLPChange(tier, rank, leaguePoints, lpChange);
     state.data.tier = result.tier;
     state.data.rank = result.rank;
@@ -104,16 +114,17 @@ function createMockController({ state, placements, log }) {
     state.data.lastDelta = getAbsoluteLP(result.tier, result.rank, result.lp) - beforeAbsLP;
     state.data.deltaSeq = state.nextDeltaSeq();
 
-    // Riot's wins/losses on a TFT league entry mean top-4 / bottom-4, not LP
-    // sign -- at high MMR a 4th can still be slightly negative. So when the
-    // simulated event carries a placement, that decides it, and the LP sign is
-    // only the fallback for a bare LP nudge with no placement.
-    if (isValidPlacement(placement)) {
-      if (placement <= 4) state.data.wins += 1;
+    // Riot's wins/losses on a TFT league entry mean the LP-positive half of the
+    // lobby, not LP sign -- at high MMR a 4th can still be slightly negative. So
+    // when the simulated event carries a placement, that decides it, and the LP
+    // sign is only the fallback for a bare LP nudge with no placement. The half
+    // is mode-dependent: top 4 of 8 in ranked, top 2 of 4 pairs in Double Up.
+    if (Modes.isValidPlacement(mode, placement)) {
+      if (placement <= Modes.MODE_META[mode].winThreshold) state.data.wins += 1;
       else state.data.losses += 1;
       // Mock must land in the same arrays the live path writes, so the strip
       // and the session average behave identically under test.
-      placements.recordSimulated(placement);
+      placements.recordSimulated(mode, placement);
     } else if (lpChange > 0) {
       state.data.wins += 1;
     } else if (lpChange < 0) {
@@ -121,7 +132,7 @@ function createMockController({ state, placements, log }) {
     }
   }
 
-  function applySetRankEvent(newTier, newRank) {
+  function applySetRankEvent(state, newTier, newRank) {
     state.data.tier = newTier;
     state.data.rank = newRank;
     state.data.lastDelta = 0; // a manual rank pick isn't a "match result"

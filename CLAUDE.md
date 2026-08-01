@@ -27,8 +27,9 @@ assets/         app/tray icons (outside src/, referenced by electron-builder)
 ```
 
 - **`src/shared/`** — `tiers.js` (tier names, order, slugs, colours,
-  `rankScore`) and `lp-math.js` (`TIER_BASE`, `getAbsoluteLP`,
-  `getTierProgress`, `applyLPChange`). Written as **UMD** because there is no
+  `rankScore`), `lp-math.js` (`TIER_BASE`, `getAbsoluteLP`, `getTierProgress`,
+  `applyLPChange`) and `modes.js` (the two ladders: queue types, queue ids,
+  `teamPlacement`, `placementClass`). Written as **UMD** because there is no
   bundler: the same file has to `require()` in Node and load from a `<script>`
   tag in both browser surfaces. Keep it free of Express, Electron and DOM.
 - **`src/main/`** — `index.js` is lifecycle only (single-instance lock,
@@ -42,7 +43,9 @@ assets/         app/tray icons (outside src/, referenced by electron-builder)
   `nodeIntegration: false`. Adding a renderer capability means adding it here
   *and* in `main/ipc.js`.
 - **`src/renderer/`** — the app window (plain HTML/CSS/JS, no framework). A
-  fixed sidebar and five pages: Overlay, Account, Practice, Help, Support.
+  fixed sidebar and five pages: Overlay, Account, Test, Help, Support. The
+  ladder switch lives on Overlay, not Account, because it doesn't change what
+  is tracked — only which tracked ladder is drawn.
   Scripts are
   split by panel, each exposing one `init`, called from `scripts/index.js`.
   `styles/tokens.css` loads first and everything else is written against it —
@@ -68,8 +71,61 @@ blocks module scripts on CORS grounds. Keeping both surfaces on the same
 mechanism means shared code works in either without a build step. **Script order
 matters** — `/shared` and the helper modules first, `index.js` last.
 
+### Two ladders, one poll
+
+The app tracks **standard ranked (`RANKED_TFT`) and Double Up
+(`RANKED_TFT_DOUBLE_UP`) at the same time**, and the mode setting only chooses
+which one `/api/rank` serves. That shape is forced by the API rather than
+chosen: `/tft/league/v1/by-puuid/{puuid}` returns the player's entry for *every*
+queue in one response, so the second ladder is free — and because it's free,
+re-pointing a single tracker at the other queue would have thrown away a session
+for nothing.
+
+What follows from it:
+
+- `createTrackerState` is instantiated **once per mode** (`ladders` in the
+  composition root). Each ladder owns its own baseline, delta sequence and
+  placement list.
+- There is still exactly **one** `rank-tracker` and **one** poll timer. `poll()`
+  fans one league response out across the modes.
+- There is also exactly **one** `placement-tracker`, holding a list per mode.
+  This is the important one: the match-ids endpoint has no queue filter, so a
+  match has to be *fetched* before its `queue_id` can be read — Double Up
+  matches were already being downloaded and discarded. Routing them into a
+  second list spends nothing. Two trackers would have duplicated every fetch.
+- **A mode change is not an identity change.** Both ladders are already polled,
+  so switching needs no refetch and must not call `resetIdentity()`.
+
 ## Things that will bite you
 
+- **Double Up is the same metallic ladder as ranked; Hyper Roll is not.** Double
+  Up moved off Hyper Roll's colour tiers in patch 12.11 and reports ordinary
+  `tier`/`rank`/`leaguePoints`, which is why `tiers.js` and `lp-math.js` needed
+  no mode awareness. `ratedTier`/`ratedRating` belong to `RANKED_TFT_TURBO`
+  alone — Riot's own DTO docs qualify them as "Only included for the
+  RANKED_TFT_TURBO queueType". A comment here used to claim Double Up carried
+  them too; it was wrong, and it argued against a feature that turned out to be
+  mostly plumbing.
+- **Riot reports Double Up placements on the 1–8 player scale, not 1–4.**
+  Partners land on adjacent slots — verified live: `(1,2) (3,4) (5,6) (7,8)`,
+  with `partner_group_id` agreeing. So the *winning* pair contains a player whose
+  raw `placement` is `2`, and putting that number on the strip tells a stream
+  someone came second when they won. `modes.js:teamPlacement` folds it by
+  ranking the partner groups on their best placement; halving is only the
+  fallback for a match with no `partner_group_id` (the field is real but absent
+  from Riot's ParticipantDto table, which also omits `augments` and `missions`).
+- **Anything that compares one poll against the previous has to be told the mode
+  changed.** A ladder switch replaces every value at once, which is not a match
+  result: `rank-moment.js` would have announced "Demoted EMERALD" on a click,
+  and the LP meter would have drawn a trend arrow because the other ladder's
+  `deltaSeq` always looks unseen. Both re-baseline on a mode change, the same
+  way they already did on a mock-mode flip. Any new poll-to-poll comparison
+  needs the same guard.
+- **`updateConfig` takes partial configs.** Absent means "leave alone". It
+  compares with `hasOwnProperty` because the Electron path sends a full config
+  but the mode switch saves one key, and treating an absent `gameName` as a
+  change made every partial update look like a new account — resetting the
+  baseline and emptying both strips.
 - **The overlay polls, the server polls, and they're different intervals.**
   Server → Riot is the user-configured `pollIntervalMs` (default 5s, sized
   against the 100 req/2min personal-key limit). Overlay → server is a fixed
@@ -78,14 +134,20 @@ matters** — `/shared` and the helper modules first, `index.js` last.
   intentionally share one LP base — see the comment on `TIER_BASE` before
   "fixing" it.
 - **`applyLPChange` is mock-mode only.** The live path reads tier/rank/LP
-  straight from Riot and never calls it. Its only job is making the Practice
+  straight from Riot and never calls it. Its only job is making the Test
   page behave like the real ladder, so a divergence there means an overlay code
-  path you can't exercise before it happens on stream.
+  path you can't exercise before it happens on stream. It needs no mode
+  awareness — both ladders share the arithmetic. What *is* mode-specific is
+  which finishes count as wins: top 4 of 8 in ranked, top 2 of 4 pairs in
+  Double Up (`MODE_META[...].winThreshold`).
 - **Mock mode writes into the same state the live path writes.** That's
-  deliberate — it's the only way the Practice page exercises real code paths — which
+  deliberate — it's the only way the Test page exercises real code paths — which
   is why `tracker-state.js` exists as a named owner, and why
   `mock-controller.js` snapshots *and* restores both it and the placement
-  tracker on the way in and out.
+  tracker on the way in and out. Events apply to the *selected* ladder, but the
+  snapshot covers **every** ladder: switching mode mid-session is one click, and
+  restoring only whichever happened to be selected at toggle-off would strand
+  simulated LP on the other one.
 - **Identity is `gameName`/`tagLine`/`platformRoute`/`regionRoute` — not the
   API key.** Personal keys expire every 24h and get pasted in mid-stream;
   treating that as an identity change resets the session baseline and wipes the
@@ -145,9 +207,15 @@ matters** — `/shared` and the helper modules first, `index.js` last.
 ## Testing
 
 There's no automated test suite. Manual verification runs through the
-**Practice** page / `POST /api/test/event` and `POST /api/test/toggle-mock`,
-which drive mock rank and LP changes without burning API quota. Use practice
+**Test** page / `POST /api/test/event` and `POST /api/test/toggle-mock`,
+which drive mock rank and LP changes without burning API quota. Use test
 mode for any UI work.
+
+The Test page drives whichever ladder is selected on the Overlay page, and its
+"Finish a game" buttons swap with it — a Double Up lobby is four pairs, so it
+offers 1st–4th where ranked offers 1st/3rd/5th/8th. Testing a mode switch means
+putting the two ladders at *different* tiers first; that's the case that used to
+fire a false promotion takeover.
 
 The app window is the only place the overlay's *live* rendering is visible
 alongside the controls, since the Overlay page embeds the real card. Driving a

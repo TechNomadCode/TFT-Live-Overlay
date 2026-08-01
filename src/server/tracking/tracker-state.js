@@ -1,15 +1,20 @@
 // The mutable state behind /api/rank, in one place.
 //
 // It lives in its own module because two things write to it: the live poll
-// (rank-tracker) and the Practice page (mock-controller). Giving them a shared,
+// (rank-tracker) and the Test page (mock-controller). Giving them a shared,
 // named owner is what makes "mock writes into the very same state the live
 // path uses" an explicit design decision rather than an accident waiting to
 // diverge -- and it's what lets mock snapshot/restore it wholesale.
+//
+// One instance per game mode. Each ladder has its own tier, LP, session
+// baseline and delta sequence, which is what lets the mode switch be instant --
+// switching only changes which of these is served, it never refetches.
 
 const { getAbsoluteLP, getTierProgress } = require('../../shared/lp-math');
 
-function emptyData() {
+function emptyData(mode) {
   return {
+    mode,
     gameName: '', tagLine: '', tier: 'UNRANKED', rank: '',
     leaguePoints: 0, wins: 0, losses: 0,
     sessionLP: 0, sessionWins: 0, sessionLosses: 0,
@@ -23,11 +28,15 @@ function emptyData() {
 /**
  * @param {object} deps
  * @param {object} deps.placements - placement tracker, read for the derived fields
+ * @param {string} deps.mode - which ladder this instance holds
  */
-function createTrackerState({ placements }) {
+function createTrackerState({ placements, mode }) {
   const state = {
-    /** The object served verbatim by /api/rank. */
-    data: emptyData(),
+    /** Which ladder this state is for. Never changes after construction. */
+    mode,
+
+    /** The object served verbatim by /api/rank when this mode is selected. */
+    data: emptyData(mode),
 
     /** Session baseline: absolute LP + W/L at the moment tracking started. */
     baseline: null,
@@ -51,10 +60,10 @@ function createTrackerState({ placements }) {
     return state.deltaSeq;
   };
 
-  /** Copies the placement tracker's current view onto the served payload. */
+  /** Copies this mode's slice of the placement tracker onto the served payload. */
   state.syncPlacements = function syncPlacements() {
-    state.data.recentPlacements = placements.getRecent();
-    state.data.sessionAvgPlacement = placements.getSessionAverage();
+    state.data.recentPlacements = placements.getRecent(mode);
+    state.data.sessionAvgPlacement = placements.getSessionAverage(mode);
   };
 
   /** Recomputes session totals against the baseline, if one is locked. */

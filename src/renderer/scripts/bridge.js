@@ -20,7 +20,7 @@
   }
 
   /** Drives POST /api/test/event. Failures are logged, never surfaced -- a dead
-   *  server is already visible in the sidebar's status readout, and the Practice
+   *  server is already visible in the sidebar's status readout, and the Test
    *  page can't do anything useful without one. */
   async function postTestEvent(action, payload = {}) {
     try {

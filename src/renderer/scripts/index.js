@@ -6,6 +6,10 @@
 
   ns.initNav();
   ns.initOverlayLink();
+  // Before the panels that follow the selected ladder. It resolves the saved
+  // mode asynchronously and then announces it, so those panels are registered
+  // as listeners well before the first announcement lands either way.
+  ns.initModeSwitch();
   ns.initPreview();
   ns.initDiagnostics();
   ns.initSettingsForm();

@@ -21,6 +21,7 @@ const { createRankRouter } = require('./routes/rank.routes');
 const { createCrestRouter } = require('./routes/crest.routes');
 const { createTestRouter } = require('./routes/test.routes');
 const { createDiagRouter } = require('./routes/diag.routes');
+const Modes = require('../shared/modes');
 
 // Only for the version/platform header at the top of each log session, so a
 // report tells us which build produced it. Not an Electron dependency.
@@ -56,8 +57,12 @@ function createOverlayServer({ onStatusChange, log, logDir } = {}) {
     regionRoute: 'europe',
     platformRoute: 'euw1',
     pollIntervalMs: DEFAULT_POLL_INTERVAL_MS,
+    // Which ladder the card shows. Both are polled regardless -- this only
+    // selects which one is served.
+    gameMode: Modes.RANKED,
   };
   const getConfig = () => config;
+  const getMode = () => Modes.coerceMode(config.gameMode);
 
   let httpServer = null;
 
@@ -70,23 +75,33 @@ function createOverlayServer({ onStatusChange, log, logDir } = {}) {
 
   const riot = createRiotClient({ getConfig, log });
   const crests = createCrestService({ log });
+  // One placement tracker for every mode, not one each: the match-ids endpoint
+  // has no queue filter, so matches have to be fetched before they can be
+  // routed, and a second tracker would re-fetch the very same documents.
   const placements = createPlacementTracker({ riot, log, isMockMode });
-  const state = createTrackerState({ placements });
+  // One tracker state per ladder. Both are polled from the same league call, so
+  // the mode switch is a read-side choice with no refetch and no reset.
+  const ladders = {};
+  for (const mode of Modes.MODES) {
+    ladders[mode] = createTrackerState({ placements, mode });
+  }
+  const activeState = () => ladders[getMode()];
   const rank = createRankTracker({
-    riot, state, placements, getConfig, isMockMode, log, emit: emitStatus,
+    riot, ladders, placements, getConfig, isMockMode, log, emit: emitStatus,
   });
-  mock = createMockController({ state, placements, log });
+  mock = createMockController({ ladders, placements, getMode, log });
 
   // The retry ladder resolves placements outside any poll, so it needs its own
-  // way to push the result to the dashboard.
+  // way to push the result to the dashboard. One catch-up can resolve matches
+  // on either ladder, so both are re-synced.
   placements.onCatchupResolved(() => {
-    state.syncPlacements();
+    for (const mode of Modes.MODES) ladders[mode].syncPlacements();
     emitStatus();
   });
 
   function getStatus() {
     return {
-      ...state.data,
+      ...activeState().data,
       isMockMode: isMockMode(),
       isPolling: rank.isPolling(),
       region: config.regionLabel || '',
@@ -101,12 +116,14 @@ function createOverlayServer({ onStatusChange, log, logDir } = {}) {
   app.use('/api/crest', createCrestRouter({ crests }));
   app.use('/api', createRankRouter({
     getRankPayload: () => ({
-      ...state.data,
+      ...activeState().data,
       isMockMode: isMockMode(),
       region: config.regionLabel || '',
     }),
   }));
-  app.use('/api/test', createTestRouter({ mock, state, emit: emitStatus }));
+  app.use('/api/test', createTestRouter({
+    mock, getLatestData: () => activeState().data, emit: emitStatus,
+  }));
   app.use('/api/diag', createDiagRouter({ diag }));
 
   // overlay.html and its styles/scripts, plus the shared modules those scripts
@@ -166,13 +183,24 @@ function createOverlayServer({ onStatusChange, log, logDir } = {}) {
       // platformRoute has to be in here even though regionRoute already is:
       // euw1/eun1 both route to `europe`, as do na1/br1 to `americas`, so
       // regionRoute alone misses a move to a different ladder.
-      const identityChanged =
-        newConfig.gameName !== config.gameName ||
-        newConfig.tagLine !== config.tagLine ||
-        newConfig.platformRoute !== config.platformRoute ||
-        newConfig.regionRoute !== config.regionRoute;
-      const keyChanged = newConfig.riotApiKey !== config.riotApiKey;
-      const pollChanged = newConfig.pollIntervalMs !== config.pollIntervalMs;
+      // Absent means "leave alone", not "changed to undefined". The Electron
+      // path always hands over a full config (settingsToServerConfig builds
+      // every key), but the mode switch saves a single key, and comparing an
+      // absent field against the live one made every partial update look like a
+      // move to a different account -- resetting the baseline and emptying both
+      // placement strips.
+      const has = (key) => Object.prototype.hasOwnProperty.call(newConfig, key);
+      const changed = (key) => has(key) && newConfig[key] !== config[key];
+
+      const identityChanged = changed('gameName') || changed('tagLine')
+        || changed('platformRoute') || changed('regionRoute');
+      const keyChanged = changed('riotApiKey');
+      const pollChanged = changed('pollIntervalMs');
+      // Note what a mode change is NOT: an identity change, or a reason to
+      // refetch. Every mode is polled from the same league call, so switching
+      // only changes which already-tracked ladder gets served -- instantly, and
+      // without disturbing the other one's session baseline or placement strip.
+      const modeChanged = has('gameMode') && Modes.coerceMode(newConfig.gameMode) !== getMode();
 
       config = { ...config, ...newConfig };
 
@@ -182,6 +210,10 @@ function createOverlayServer({ onStatusChange, log, logDir } = {}) {
         rank.start(); // restart with the new interval
       } else if (identityChanged || keyChanged) {
         rank.poll();
+      } else if (modeChanged) {
+        // No fetch to wait on, so push the other ladder to the dashboard now
+        // rather than leaving the sidebar a poll behind the switch.
+        emitStatus();
       }
     },
 

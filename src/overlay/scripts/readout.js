@@ -6,7 +6,7 @@
 // its space is what buys the remaining rows the size they need. The server
 // still reports those fields -- the settings window's dashboard uses them.
 
-(function (ns, Tiers) {
+(function (ns, Tiers, Modes) {
   'use strict';
 
   // Always renders PLACEMENT_SLOTS chips so the row can't change size as
@@ -19,15 +19,19 @@
   // ellipsised to "CHALLE..." once the label grew.
   const LONG_RANK_LABEL = 10;
 
-  function renderPlacements(list) {
+  // The numbers arriving here are already on the mode's own scale -- the server
+  // folds Double Up's raw 1..8 participant placement into the 1..4 team
+  // placement the game actually shows the player. Only the win/loss split
+  // differs per mode (top 4 of 8 vs top 2 of 4), which is what placementClass
+  // owns.
+  function renderPlacements(list, mode) {
     const row = ns.el('placements');
     if (!row) return;
     let html = '';
     for (let i = 0; i < PLACEMENT_SLOTS; i++) {
       const p = list[i];
       if (typeof p === 'number') {
-        const cls = p === 1 ? 'first' : p <= 4 ? 'top4' : 'bot4';
-        html += `<span class="pl ${cls}">${p}</span>`;
+        html += `<span class="pl ${Modes.placementClass(mode, p)}">${p}</span>`;
       } else {
         html += '<span class="pl empty">-</span>';
       }
@@ -116,4 +120,4 @@
   ns.renderGoal = renderGoal;
   ns.renderIdentity = renderIdentity;
   ns.renderFooterBand = renderFooterBand;
-}(window.TFTOverlay = window.TFTOverlay || {}, window.TFT.Tiers));
+}(window.TFTOverlay = window.TFTOverlay || {}, window.TFT.Tiers, window.TFT.Modes));

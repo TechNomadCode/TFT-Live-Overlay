@@ -1,5 +1,5 @@
-// Renders a status payload into the sidebar readout, the practice-mode and
-// error banners, and the practice toggle.
+// Renders a status payload into the sidebar readout, the test-mode and
+// error banners, and the test toggle.
 //
 // The overlay preview is deliberately not fed from here -- it's an iframe of the
 // real overlay, which polls the server itself. See scripts/preview.js.
@@ -8,25 +8,34 @@
 // (onStatusUpdate) whenever it actually changes, so this window burns zero CPU
 // sitting idle between updates.
 
-(function (ns, Tiers) {
+(function (ns, Tiers, Modes) {
   'use strict';
 
   function renderStatusHead(status) {
     const dot = document.getElementById('statusDot');
     const text = document.getElementById('statusText');
+    let label;
     if (status.isMockMode) {
       dot.className = 'dot warn';
-      text.textContent = 'Practice mode';
+      label = 'Test mode';
     } else if (status.error) {
       dot.className = 'dot error';
-      text.textContent = 'Error';
+      label = 'Error';
     } else if (status.isPolling) {
       dot.className = 'dot ok';
-      text.textContent = 'Live';
+      label = 'Live';
     } else {
       dot.className = 'dot';
-      text.textContent = 'Not tracking';
+      label = 'Not tracking';
     }
+    // The readout below is whichever ladder is selected, and this line is the
+    // only part of it visible from every page -- so say which one when it isn't
+    // the default. Ranked stays unlabelled: naming it on every screen is noise,
+    // and its absence is what makes the Double Up label carry meaning.
+    const mode = Modes.coerceMode(status.mode);
+    text.textContent = mode === Modes.RANKED
+      ? label
+      : `${label} · ${Modes.MODE_META[mode].label}`;
   }
 
   function renderRank(status) {
@@ -68,11 +77,11 @@
   }
 
   function renderBanners(status) {
-    const practice = document.getElementById('practiceBanner');
-    practice.style.display = status.isMockMode ? '' : 'none';
-    // Also flag the nav item, so practice mode is visible from every page --
+    const test = document.getElementById('testBanner');
+    test.style.display = status.isMockMode ? '' : 'none';
+    // Also flag the nav item, so test mode is visible from every page --
     // the failure it prevents is going live with fake LP on screen.
-    document.getElementById('navPractice').classList.toggle('flagged', !!status.isMockMode);
+    document.getElementById('navTest').classList.toggle('flagged', !!status.isMockMode);
 
     const error = document.getElementById('errorBanner');
     if (status.error) {
@@ -100,4 +109,4 @@
 
   ns.applyStatus = applyStatus;
   ns.initStatusView = init;
-}(window.TFTSettings = window.TFTSettings || {}, window.TFT.Tiers));
+}(window.TFTSettings = window.TFTSettings || {}, window.TFT.Tiers, window.TFT.Modes));

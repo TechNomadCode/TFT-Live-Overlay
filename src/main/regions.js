@@ -1,3 +1,6 @@
+const { DEFAULT_POLL_INTERVAL_MS } = require('../server/constants');
+const Modes = require('../shared/modes');
+
 // Region routing. Riot splits TFT across two different route kinds: the
 // platform route addresses a specific ladder (euw1, na1, kr...), while the
 // regional route addresses the account and match APIs and covers several
@@ -27,7 +30,11 @@ const REGION_MAP = {
 
 const DEFAULT_PLATFORM = 'euw1';
 
-/** Translates persisted settings into the shape the overlay server expects. */
+/**
+ * Translates persisted settings into the shape the overlay server expects.
+ * This picks named keys, so anything added to settings.json that the server
+ * needs has to be added here too or it is silently dropped.
+ */
 function settingsToServerConfig(settings) {
   const platformRoute = settings.platformRoute || DEFAULT_PLATFORM;
   const [regionRoute, regionLabel] = REGION_MAP[platformRoute] || ['europe', ''];
@@ -38,7 +45,8 @@ function settingsToServerConfig(settings) {
     platformRoute,
     regionRoute,
     regionLabel,
-    pollIntervalMs: settings.pollIntervalMs || 5000,
+    pollIntervalMs: settings.pollIntervalMs || DEFAULT_POLL_INTERVAL_MS,
+    gameMode: Modes.coerceMode(settings.gameMode),
   };
 }
 

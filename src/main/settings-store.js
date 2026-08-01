@@ -10,6 +10,7 @@ const { app } = require('electron');
 
 const { DEFAULT_PLATFORM } = require('./regions');
 const { DEFAULT_POLL_INTERVAL_MS } = require('../server/constants');
+const Modes = require('../shared/modes');
 
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
 
@@ -20,6 +21,7 @@ function defaultSettings() {
     riotApiKey: '',
     platformRoute: DEFAULT_PLATFORM,
     pollIntervalMs: DEFAULT_POLL_INTERVAL_MS,
+    gameMode: Modes.RANKED,
   };
 }
 
